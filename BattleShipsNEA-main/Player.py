@@ -1,4 +1,15 @@
-for x in range(1000000):
-    b = int("1" + str(x))
-    if 3*b == int(str(x) + "1"):
-        print(x)
+from Board import Board
+
+class Player():
+    def __init__(self, pNum): # 0 or 1
+        self._board = Board(10,10)
+        self._pNum = pNum
+
+    def attack(self, x,y): # index starts at 0
+        return self._board.attack(x,y)
+
+    def addShip(self, ship):
+        self._board.addShip(ship)
+
+    def getBoard(self):
+        return self._board
