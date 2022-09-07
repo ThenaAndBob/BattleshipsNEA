@@ -25,7 +25,7 @@ class Terminal(UI):
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
-            for y in range(3, 0 , -1):
+            for y in range(4, 0 , -1):
                 self._game.addShip(x, input((f"{y} Ships in format xyrh")))
             pp(self._game.getBoard(x))
 
