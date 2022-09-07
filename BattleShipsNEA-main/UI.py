@@ -1,6 +1,7 @@
 from abc import abstractclassmethod
 from Game import Game
 from pprint import pprint as pp
+import os
 
 class UI():
     def __init__(self):
@@ -28,17 +29,25 @@ class Terminal(UI):
             for y in range(4, 0 , -1):
                 self._game.addShip(x, input((f"{y} Ships in format xyrh")))
             pp(self._game.getBoard(x))
+            input("Press enter to change turns and clear terminal")
+            os.system('cls||clear')
 
         print("Time to attack!")
         play = True
         while play:
             for x in range(2):
-                print("\n\n\n")
                 print(f"Player {x+1} turn")
+                print(f"Player {x+1} board:")
+                pp(self._game.getBoard(x))
+
+                print(f"Player {((x+1)%2)+1} secret board:")
+                for x in self._game.getSBoard(x):
+                    print(x)
+
                 attack = input("Input square to attack (xy)")
 
                 result = self._game.Attack(int(attack[0]), int(attack[1]), (x+1)%2)
-                if result == 2:
+                if result == 3:
                     print("Hit!")
                     print(f"Player {x+1} wins!")
                     play = False
@@ -47,5 +56,7 @@ class Terminal(UI):
                     print("Hit!")
                 else:
                     print("Miss!")
+                input("Press enter to change turns and clear terminal")
+                os.system('cls||clear')
 
 
