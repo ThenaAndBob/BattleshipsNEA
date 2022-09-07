@@ -1,10 +1,19 @@
 from UI import GUI, Terminal
+from sys import argv
 
-a = input()
-if a == 'g':
-    pass
-elif a == 't':
-    ui = Terminal()
-    ui.run()
+def usage():   
+    print(f"""
+Usage: {argv[0]} [g | t]
+g : play with the GUI
+t : play with the Terminal""")
+    quit()
 
-input()
+
+if __name__ == "__main__":
+    if argv[1] == 'g':
+        pass
+    elif argv[1] == 't':
+        ui = Terminal()
+        ui.run()
+    else:
+        usage()
