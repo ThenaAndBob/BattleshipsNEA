@@ -1,2 +1,3 @@
-for x in range(2,3):
+for x in range(5):
     print(x)
+    x = x + 1

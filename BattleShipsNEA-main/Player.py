@@ -9,7 +9,10 @@ class Player():
         return self._board.attack(x,y)
 
     def addShip(self, ship):
-        self._board.addShip(ship)
+        return self._board.addShip(ship)
 
     def getBoard(self):
         return self._board
+
+    def getSBoard(self):
+        return self._board.getSBoard()

@@ -14,10 +14,13 @@ class Game():
         return self._players[playerID]
         
     def addShip(self, pNum, ship):
-        self._players[pNum].addShip(ship)
+        return self._players[pNum].addShip(ship)
 
     def getBoard(self, pNum):
         return self._players[pNum].getBoard()
+
+    def getSBoard(self,pNum):
+        return self._players[pNum].getSBoard()
 
 
         
