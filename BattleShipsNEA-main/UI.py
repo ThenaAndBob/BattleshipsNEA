@@ -27,11 +27,12 @@ class Terminal(UI):
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
-            while self._numTurns > 0:
+            y = self._numTurns
+            while y > 0:
                 if self._game.addShip(x, input((f"{y} Ships in format xyrh"))) == -1:
                     print("Ships overlap, current state of board:")
                     pp(self._game.getBoard(x))
-                    self._numTurns += 1
+                    y += 1
                 y -= 1
             pp(self._game.getBoard(x))
             input("Press enter to change turns and clear terminal")
