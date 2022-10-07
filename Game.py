@@ -4,7 +4,7 @@ class Game():
     def __init__(self):
         self._players = [Player(0), Player(1)]
 
-    def Attack(self,x,y,playerID): # Playerd ID = 0 or 1
+    def attack(self,x,y,playerID): # Playerd ID = 0 or 1
         return self._players[playerID].attack(x,y) # index starts at 0
 
     def getNumShips(self,playerID):

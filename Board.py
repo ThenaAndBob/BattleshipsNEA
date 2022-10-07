@@ -8,18 +8,23 @@ class Board():
         self._ships = []
         self._shipHP = 0
         self._sGrid = [[0 for _ in range(width)] for _ in range(height)]
-        # In grid, a 0 is empty, 1 is ship, -1 is hit ship, 2 is a hit empty.
+        # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
 
-    def attack(self,x,y): # Index starts at 0.
-        if self._grid[y][x] == 1:
-            self._grid[y][x] = -1
-            self._sGrid[y][x] = -1
-            self._shipHP -= 1
-            if self._shipHP == 0:
-                return 3
-            return 1
-        self._sGrid[y][x] = 2
+    def attack(self,x,y): # Index starts at 0. 
+        try:
+            if self._grid[y][x] == 1:
+                self._grid[y][x] = -1
+                self._sGrid[y][x] = -1
+                self._shipHP -= 1
+                if self._shipHP == 0:
+                    return 2 # Returing -2 = already hit square, -1 = miss, 1 = hit ship, 2 = game won
+                return 1
+        except IndexError:
+                return -2
+        if self._sGrid[y][x] < 0 :
+            return -2
         return -1
+
 
     def shipHP(self): # returns total ship HP
         return self._shipHP
