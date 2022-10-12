@@ -55,7 +55,7 @@ class Terminal(UI):
             os.system('cls||clear')
 
         print("Time to attack!")
-        play = True # test
+        play = True
         while play:
             for x in range(2):
                 print(f"Player {x+1} turn")
