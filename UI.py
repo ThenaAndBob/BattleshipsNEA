@@ -16,7 +16,6 @@ class UI():
 class GUI(UI):
     def __init__(self):
         super().__init__()
-        self._numTurns = 4
 
     def run(self):
         self._menu()
@@ -56,7 +55,7 @@ class Terminal(UI):
             os.system('cls||clear')
 
         print("Time to attack!")
-        play = True
+        play = True # test
         while play:
             for x in range(2):
                 print(f"Player {x+1} turn")
