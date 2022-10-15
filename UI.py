@@ -2,7 +2,8 @@ from abc import abstractclassmethod
 from Game import Game
 from pprint import pprint as pp
 import os
-import pygame
+import pygame as pg
+from art import *
 
 class UI():
     def __init__(self):
@@ -22,24 +23,53 @@ class GUI(UI):
         pass
 
     def _menu(self):
-        pygame.init()
-
-        menuOptLoc = []
-        pointerLoc = 0
-
+        # Initialise menu
+        pg.init()
+        WIDTH = 1920
+        HEIGHT = 1080
+        screen = pg.display.set_mode((WIDTH, HEIGHT))
         running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT():
-                    running = False
 
-        pygame.QUIT
+        # Buttons
+        buttonimages = [pg.image.load("images.png")] # .convert() ?
+        rects = [buttonimages[0].get_rect()]
+        rects[0].center = screen.get_rect().center
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT():
+                    running = False
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        pass
+
+            for x in range(len(rects)):
+                screen.blit(buttonimages[x], rects[x])
+
+        pg.QUIT
 
 class Terminal(UI):
     def __init__(self):
         super().__init__()
 
     def run(self):
+        print(text2art("Battleships"))
+        print("Main Menu:")
+        print("1. Log in")
+        print("2. Sign up")
+        print("3. Guest")
+        print("4. Quit")
+
+        opt = input()
+        if opt == "1":
+            self.__logIn()
+        elif opt == "2":
+            self.__signUp()
+        elif opt == "3":
+            self.__local()
+
+    
+    def __local(self):
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
@@ -84,4 +114,10 @@ class Terminal(UI):
                     input("Press enter to change turns and clear terminal")
                 os.system('cls||clear')
 
+    def __signUp():
+        pass
 
+    def __logIn():
+        pass
+
+    
