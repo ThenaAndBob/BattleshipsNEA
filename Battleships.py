@@ -11,8 +11,8 @@ t : play with the Terminal""")
 
 if __name__ == "__main__":
     if argv[1] == 'g':
-        print("GUI not yet implement.")
-        pass
+        ui = GUI()
+        ui.run()
     elif argv[1] == 't':
         ui = Terminal()
         ui.run()
