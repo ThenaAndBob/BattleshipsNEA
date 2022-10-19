@@ -1,4 +1,5 @@
 from abc import abstractclassmethod
+import math
 from Game import Game
 from pprint import pprint as pp
 import os
@@ -19,34 +20,110 @@ class GUI(UI):
         super().__init__()
 
     def run(self):
-        self._menu()
-        pass
+        self.__menu()
 
-    def _menu(self):
-        # Initialise menu
+    def __menu(self):
+        # Initialise
         pg.init()
-        WIDTH = 1920
-        HEIGHT = 1080
+        WIDTH = 400
+        HEIGHT = 400
         screen = pg.display.set_mode((WIDTH, HEIGHT))
         running = True
 
         # Buttons
-        buttonimages = [pg.image.load("images.png")] # .convert() ?
-        rects = [buttonimages[0].get_rect()]
-        rects[0].center = screen.get_rect().center
+        rects = []
+        buttonImages = [pg.image.load("play.png"), pg.image.load("help.png"), pg.image.load("quit.png")] # .convert() ?
+        for x in buttonImages:
+            rects.append(x.get_rect())
+        #reposition these rects correctly.
 
         while running:
             for event in pg.event.get():
-                if event.type == pg.QUIT():
+                if event.type == pg.QUIT:
                     running = False
-                if event.type == pg.MOUSEBUTTONDOWN:
+                elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        pass
+                        # Check which menu button it collided with and call that function.
+                        point = pg.mouse.get_pos
+                        for x in range(len(rects)):
+                            if rects[x].collidepoint(point):
+                                if x == 0:
+                                    self.__playMenu()
+                                elif x == 1:
+                                    self.__help()
+                                else:
+                                    running = False
+                                    pg.quit()
 
-            for x in range(len(rects)):
-                screen.blit(buttonimages[x], rects[x])
+    def __playMenu():
+        pass
 
-        pg.QUIT
+    def __local(self):
+        # Initialise
+        pg.init()
+        WIDTH = 600
+        HEIGHT = 400
+        screen = pg.display.set_mode((WIDTH, HEIGHT))
+        running = True
+        currPlayer = 0
+
+        # Ships
+        rects = []
+        shipAttach = [False, False, False]
+        shipImages = [pg.image.load("ship1"), pg.image.load("ship2"), pg.image.load("ship3")] # .convert() ?
+        for x in shipImages:
+            rects.append(x.get_rect())
+            #scale these correctly, each square is 40*40 pixels.
+
+        # Grid
+        squareSize = 40
+        squares = []
+        for x in range(200, WIDTH, squareSize):
+            for y in range(0, HEIGHT, squareSize):
+                squares.append(pg.Rect(x, y, squareSize, squareSize))
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == 1 and True not in shipAttach:
+                        point = pg.mouse.get_pos()
+                        for x in range(len(rects)):
+                            if rects[x].collidepoint(point):
+                                # Mouse attaches to ship and starts moving it around.
+                                shipAttach[x] = True
+                                pass
+                elif event.type == pg.MOUSEBUTTONDOWN and True in shipAttach:
+                    point = pg.mouse.get_pos()
+                    # if this ship can be placed do:
+                    for x in range(len(shipAttach)):
+                        if shipAttach[x]:
+                            shipAttach[x] = False
+                            rects[x].left = 20 * math.round((point[0] - rects[x].width/2)/20)   # rounded to nearest 20
+                            rects[x].top = 20 * math.round((point[1] - rects[x].height/2)/20)
+                            self._game.addShip(currPlayer, f"{(rects[x].left - 200)/20}{(rects[x].top - 200)/20}h3")
+                            break
+
+            for x in range(len(shipAttach)): # Makes a ship follow the mouse around once it has been clicked.
+                if shipAttach[x]:
+                    rects[x].left = pg.mouse.get_pos()[0] + rects[x].width/2
+                    rects[x].top = pg.mouse.get_pos()[1] + rects[x].height/2
+
+            for square in squares:
+                pg.draw.rect(screen, (255,255,255), square, 1)
+
+            for x in range (len(rects)):
+                screen.blit(shipImages[x], rects[x])
+
+    def __help():
+        pass
+
+    def __placeShips(self):
+        pass
+
+    def __displayBoard(self):
+        pass
 
 class Terminal(UI):
     def __init__(self):
