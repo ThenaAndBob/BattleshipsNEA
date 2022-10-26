@@ -16,6 +16,9 @@ class UI():
         raise NotImplementedError
 
 class GUI(UI):
+    WIDTH = 1920//2
+    HEIGHT = 1080//2
+
     def __init__(self):
         super().__init__()
 
@@ -25,17 +28,15 @@ class GUI(UI):
     def __menu(self):
         # Initialise
         pg.init()
-        WIDTH = 400
-        HEIGHT = 400
-        screen = pg.display.set_mode((WIDTH, HEIGHT))
+        screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
         running = True
 
         # Buttons
         rects = []
-        buttonImages = [pg.image.load("play.png"), pg.image.load("help.png"), pg.image.load("quit.png")] # .convert() ?
-        for x in buttonImages:
-            rects.append(x.get_rect())
-        #reposition these rects correctly.
+        buttonImages = [pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png")] # change these images
+        for x in range(len(buttonImages)):
+            rects.append(buttonImages[x].get_rect())
+            rects[x].update((self.WIDTH - rects[x].width)/2, (self.HEIGHT - rects[x].height)/2 - 200 + 100*x, rects[x].width, rects[x].height)
 
         while running:
             for event in pg.event.get():
@@ -44,42 +45,46 @@ class GUI(UI):
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         # Check which menu button it collided with and call that function.
-                        point = pg.mouse.get_pos
+                        point = pg.mouse.get_pos()
                         for x in range(len(rects)):
                             if rects[x].collidepoint(point):
+                                pg.quit()
                                 if x == 0:
-                                    self.__playMenu()
+                                    self.__local()
                                 elif x == 1:
                                     self.__help()
                                 else:
                                     running = False
                                     pg.quit()
 
-    def __playMenu():
+            for x in range (len(rects)):
+                screen.blit(buttonImages[x], rects[x])
+
+            pg.display.update()
+
+    def __playMenu(self):
         pass
 
     def __local(self):
         # Initialise
         pg.init()
-        WIDTH = 600
-        HEIGHT = 400
-        screen = pg.display.set_mode((WIDTH, HEIGHT))
+        screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
         running = True
         currPlayer = 0
 
         # Ships
         rects = []
         shipAttach = [False, False, False]
-        shipImages = [pg.image.load("ship1"), pg.image.load("ship2"), pg.image.load("ship3")] # .convert() ?
+        shipImages = [pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png")] # .convert() ?
         for x in shipImages:
             rects.append(x.get_rect())
             #scale these correctly, each square is 40*40 pixels.
 
         # Grid
-        squareSize = 40
+        squareSize = self.HEIGHT//11    # 10 is the number of squares in a column.  I set it to 11 to leave a bit of space.
         squares = []
-        for x in range(200, WIDTH, squareSize):
-            for y in range(0, HEIGHT, squareSize):
+        for x in range(self.WIDTH//2 - 5*squareSize, self.WIDTH//2 + 5*squareSize, squareSize):
+            for y in range(self.HEIGHT//2 - 5*squareSize, self.HEIGHT//2 + 5*squareSize, squareSize):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
 
         while running:
@@ -94,29 +99,34 @@ class GUI(UI):
                                 # Mouse attaches to ship and starts moving it around.
                                 shipAttach[x] = True
                                 pass
-                elif event.type == pg.MOUSEBUTTONDOWN and True in shipAttach:
-                    point = pg.mouse.get_pos()
-                    # if this ship can be placed do:
-                    for x in range(len(shipAttach)):
-                        if shipAttach[x]:
-                            shipAttach[x] = False
-                            rects[x].left = 20 * math.round((point[0] - rects[x].width/2)/20)   # rounded to nearest 20
-                            rects[x].top = 20 * math.round((point[1] - rects[x].height/2)/20)
-                            self._game.addShip(currPlayer, f"{(rects[x].left - 200)/20}{(rects[x].top - 200)/20}h3")
-                            break
+                elif event.type == pg.MOUSEBUTTONUP:
+                    print(0)
+                    if event.button == 1 and True in shipAttach:
+                        point = pg.mouse.get_pos()
+                        print(1)
+                        # if this ship can be placed do:
+                        for x in range(len(shipAttach)):
+                            if shipAttach[x]:
+                                shipAttach[x] = False
+                                rects[x].update(20 * round((point[0] - rects[x].width/2)/20), 20 * round((point[1] - rects[x].height/2)/20), rects[x].width, rects[x].height)  # The values should not be hardcoded like this.
+                                self._game.addShip(currPlayer, f"{(rects[x].left - 200)/20}{(rects[x].top - 200)/20}h3")
+                                break
 
             for x in range(len(shipAttach)): # Makes a ship follow the mouse around once it has been clicked.
                 if shipAttach[x]:
-                    rects[x].left = pg.mouse.get_pos()[0] + rects[x].width/2
-                    rects[x].top = pg.mouse.get_pos()[1] + rects[x].height/2
+                    rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
 
+
+            screen.fill((0,0,0))
             for square in squares:
                 pg.draw.rect(screen, (255,255,255), square, 1)
 
             for x in range (len(rects)):
                 screen.blit(shipImages[x], rects[x])
 
-    def __help():
+            pg.display.update()
+
+    def __help(self):
         pass
 
     def __placeShips(self):
