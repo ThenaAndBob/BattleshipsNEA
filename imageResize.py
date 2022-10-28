@@ -3,15 +3,18 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #Read image
-img=Image.open('ship4HP.png')
+ogimg=[Image.open('SourceImages\HP2Ship20.png')] #, Image.open('SourceImages\HelpS.png'), Image.open('SourceImages\QuitS.png')]
+finNames = ["HP2Ship", "Help", "Quit"]
+scale = 10
 
-#resize
-o_size=(40,160) #output size
-res=img.resize(o_size,Image.NEAREST)
+for x in range(len(ogimg)):
+    #resize
+    n_size=(ogimg[x].size[0]*scale,ogimg[x].size[1]*scale) #output size
+    res=ogimg[x].resize(n_size,Image.NEAREST)
 
-#save image
-res.save('ship4HP_US.png')
+    #save image
+    res.save(f"FinImages\{finNames[x]}{20/scale}.png") # The number after is scale relative to 1920 * 1080 (e.g. 2 --> 1920/2 = 960)
 
-#display image
-plt.imshow(res)
-plt.show()
+    #display image
+    plt.imshow(res)
+    plt.show()

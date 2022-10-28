@@ -16,8 +16,8 @@ class UI():
         raise NotImplementedError
 
 class GUI(UI):
-    WIDTH = 1920//2
-    HEIGHT = 1080//2
+    WIDTH = 960
+    HEIGHT = 540
 
     def __init__(self):
         super().__init__()
@@ -33,10 +33,11 @@ class GUI(UI):
 
         # Buttons
         rects = []
-        buttonImages = [pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png")] # change these images
+        buttonImages = [pg.image.load("FinImages\Play2.0.png"), pg.image.load("FinImages\Help2.0.png"), pg.image.load("FinImages\Quit2.0.png")] # .convert() ?
+        bgImage = pg.image.load("FinImages\MenuBackGround.png")
         for x in range(len(buttonImages)):
             rects.append(buttonImages[x].get_rect())
-            rects[x].update((self.WIDTH - rects[x].width)/2, (self.HEIGHT - rects[x].height)/2 - 200 + 100*x, rects[x].width, rects[x].height)
+            rects[x].update(int(round((350/960)*self.WIDTH)), int(round((190/540)*self.HEIGHT)) + x*int(round((110/540)*self.HEIGHT)), rects[x].width, rects[x].height)
 
         while running:
             for event in pg.event.get():
@@ -57,6 +58,7 @@ class GUI(UI):
                                     running = False
                                     pg.quit()
 
+            screen.blit(bgImage, (0,0))
             for x in range (len(rects)):
                 screen.blit(buttonImages[x], rects[x])
 
@@ -75,21 +77,21 @@ class GUI(UI):
         # Ships
         rects = []
         shipAttach = [False, False, False]
-        shipImages = [pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png"), pg.image.load("ship4HP_US.png")] # .convert() ?
-        for x in shipImages:
-            rects.append(x.get_rect())
+        shipImages = [pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png")] # .convert() ?
+        for x in range(len(shipImages)):
+            rects.append(shipImages[x].get_rect())
             #scale these correctly, each square is 40*40 pixels.
 
         # Grid
-        SquareWidth = 10     # Dimensions of the grid in squares.
-        SquareHeight = 10 
-        squareSize = self.HEIGHT//11 # 10 is the number of squares in a column. I divide by 11 instead to leave a bit of space.
-        squares = []
+        WidthInSquares = 10 # Dimensions of the grid in squares.
+        HeightInSquares = 10 
+        squareSize = self.HEIGHT//(HeightInSquares+1) # +1 to give a little bit of space.
         # Edges of the grid
         xLeft = self.WIDTH//2 - 5*squareSize   # Edges are five squares from the left.
         xRight = self.WIDTH//2 + 5*squareSize
         yTop = self.HEIGHT//2 - 5*squareSize
         yBot = self.HEIGHT//2 + 5*squareSize
+        squares = []
         # Storing grid object in squares 
         for x in range(xLeft, xRight, squareSize):
             for y in range(yTop, yBot, squareSize):
@@ -106,6 +108,7 @@ class GUI(UI):
                             if rects[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # Mouse attaches to ship and starts moving it around.
                                 shipAttach[x] = True
+                                break # Break cause otherwise you can pick up multiple ships at once.
                 elif event.type == pg.MOUSEBUTTONUP:
                     if event.button == 1 and True in shipAttach:
                         point = pg.mouse.get_pos()
@@ -119,16 +122,15 @@ class GUI(UI):
                                 rects[x].update(squareSize * math.floor((point[0] - 2*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * math.floor((point[1] - 3*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
                                 # When placing a ship, consider the line which goes directly through a placed ship, we want to find a line like that, that the mouse is closest to, and place the ship there. E.g. a 1 width ship, we want to look at lines that go in between grid lines.
 
-                                self._game.addShip(currPlayer, f"{(rects[x].left - (squareSize*SquareWidth))//squareSize}{(rects[x].top - (squareSize*SquareHeight))//squareSize}h3") # fix this.
+                                self._game.addShip(currPlayer, f"{(rects[x].left - (squareSize*WidthInSquares))//squareSize}{(rects[x].top - (squareSize*HeightInSquares))//squareSize}h3") # fix this.
 
                                 break
 
+            screen.fill((0,0,0))
             for x in range(len(shipAttach)): # Makes a ship follow the mouse around once it has been clicked.
                 if shipAttach[x]:
                     rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
 
-
-            screen.fill((0,0,0))
             for square in squares:
                 pg.draw.rect(screen, (255,255,255), square, 1)
 
