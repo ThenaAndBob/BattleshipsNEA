@@ -6,6 +6,7 @@ import os
 import pygame as pg
 from art import *
 
+
 class UI():
     def __init__(self):
         self._game = Game()
@@ -76,7 +77,7 @@ class GUI(UI):
 
         # Ships
         rects = []
-        shipAttach = [False, False, False]
+        shipAttach = [0, 0, 0]
         shipImages = [pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png")] # .convert() ?
         for x in range(len(shipImages)):
             rects.append(shipImages[x].get_rect())
@@ -102,33 +103,32 @@ class GUI(UI):
                 if event.type == pg.QUIT:
                     running = False
                 elif event.type == pg.MOUSEBUTTONDOWN:
-                    if event.button == 1 and True not in shipAttach:
+                    if event.button == 1 and 1 not in shipAttach:
                         point = pg.mouse.get_pos()
                         for x in range(len(rects)):
                             if rects[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # Mouse attaches to ship and starts moving it around.
-                                shipAttach[x] = True
+                                shipAttach[x] = 1
                                 break # Break cause otherwise you can pick up multiple ships at once.
                 elif event.type == pg.MOUSEBUTTONUP:
-                    if event.button == 1 and True in shipAttach:
+                    if event.button == 1 and 1 in shipAttach:
                         point = pg.mouse.get_pos()
                         # if this ship can be placed do:
                         for x in range(len(shipAttach)):
                             if shipAttach[x]:
-                                shipAttach[x] = False
-                                print(f"{(rects[x].left - (squareSize*10))//squareSize}{(rects[x].top - (squareSize*10))/squareSize}h3")
+                                shipAttach[x] = 2
 
                                 # An issue with this line: the (point[a] - squaresize/2) depends on the ships HP and its rotation (e.g. how much u minus depends.)
-                                rects[x].update(squareSize * math.floor((point[0] - 2*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * math.floor((point[1] - 3*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
+                                rects[x].update(squareSize * math.floor((point[0] - 2*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * math.floor((point[1] - 1*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
                                 # When placing a ship, consider the line which goes directly through a placed ship, we want to find a line like that, that the mouse is closest to, and place the ship there. E.g. a 1 width ship, we want to look at lines that go in between grid lines.
 
-                                self._game.addShip(currPlayer, f"{(rects[x].left - (squareSize*WidthInSquares))//squareSize}{(rects[x].top - (squareSize*HeightInSquares))//squareSize}h3") # fix this.
-
+                                self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}h3") # fix this. xyrh
+                                # Move the above line to something that comes after the user has press a "done" button
                                 break
 
             screen.fill((0,0,0))
             for x in range(len(shipAttach)): # Makes a ship follow the mouse around once it has been clicked.
-                if shipAttach[x]:
+                if shipAttach[x] == 1:
                     rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
 
             for square in squares:
