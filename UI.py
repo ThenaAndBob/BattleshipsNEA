@@ -79,6 +79,8 @@ class GUI(UI):
         rects = []
         shipAttach = [0, 0, 0]
         shipImages = [pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png"), pg.image.load("FinImages\HP2Ship2.0.png")] # .convert() ?
+        shipHP = [2,2,2,2]
+        shipRotation = ['h','h','h','h']
         for x in range(len(shipImages)):
             rects.append(shipImages[x].get_rect())
             #scale these correctly, each square is 40*40 pixels.
@@ -88,7 +90,7 @@ class GUI(UI):
         HeightInSquares = 10 
         squareSize = self.HEIGHT//(HeightInSquares+1) # +1 to give a little bit of space.
         # Edges of the grid
-        xLeft = self.WIDTH//2 - 5*squareSize   # Edges are five squares from the left.
+        xLeft = self.WIDTH//2 - 5*squareSize   # Edges are five squares from the centre.
         xRight = self.WIDTH//2 + 5*squareSize
         yTop = self.HEIGHT//2 - 5*squareSize
         yBot = self.HEIGHT//2 + 5*squareSize
@@ -102,6 +104,17 @@ class GUI(UI):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_r: 
+                        for x in range(len(shipAttach)):
+                            if shipAttach[x] == 1:
+                                if shipRotation[x] == 'h':
+                                    shipRotation[x] = 'v'
+                                else:
+                                    shipRotation[x] = 'h'
+                                shipImages[x] = pg.transform.rotate(shipImages[x], -90)
+                                rects[x] = shipImages[x].get_rect()
+                                break
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1 and 1 not in shipAttach:
                         point = pg.mouse.get_pos()
@@ -119,10 +132,12 @@ class GUI(UI):
                                 shipAttach[x] = 2
 
                                 # An issue with this line: the (point[a] - squaresize/2) depends on the ships HP and its rotation (e.g. how much u minus depends.)
-                                rects[x].update(squareSize * math.floor((point[0] - 2*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * math.floor((point[1] - 1*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
-                                # When placing a ship, consider the line which goes directly through a placed ship, we want to find a line like that, that the mouse is closest to, and place the ship there. E.g. a 1 width ship, we want to look at lines that go in between grid lines.
+                                if shipRotation[x] == 'h':
+                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
+                                else:
+                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) - squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
 
-                                self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}h3") # fix this. xyrh
+                                self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 # Move the above line to something that comes after the user has press a "done" button
                                 break
 
