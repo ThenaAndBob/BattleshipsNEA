@@ -14,7 +14,6 @@ class Game():
         return self._players[playerID]
         
     def addShip(self, pNum, ship):
-        print(ship)
         return self._players[pNum].addShip(ship)
 
     def getBoard(self, pNum):
