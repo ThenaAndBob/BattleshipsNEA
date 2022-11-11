@@ -12,19 +12,20 @@ class Board():
 
     def attack(self,x,y): # Index starts at 0. 
         try:
-            if self._grid[y][x] == 1:
+            if self._grid[y][x] == 1: # if hit.
                 self._grid[y][x] = -1
                 self._sGrid[y][x] = -1
                 self._shipHP -= 1
-                if self._shipHP == 0:
-                    return 2 # Returing -2 = already hit square, -1 = miss, 1 = hit ship, 2 = game won
+                if self._shipHP == 0: # if total shipHp is 0
+                    return 2 # Returing -2 = already hit square, -1 = miss, 1 = hit, 2 = game won
                 return 1
         except IndexError:
                 return -2
-        if self._sGrid[y][x] < 0 :
+        if self._sGrid[y][x] == 0:  # if empty
+            self._sGrid[y][x] = -2
+            return -1
+        if self._sGrid[y][x] == -2 : # if already hit
             return -2
-        return -1
-
 
     def shipHP(self): # returns total ship HP
         return self._shipHP
