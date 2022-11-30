@@ -3,9 +3,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #Read image
-ogimg=[Image.open('SourceImages\HP2Ship20.png')] #, Image.open('SourceImages\HelpS.png'), Image.open('SourceImages\QuitS.png')]
-finNames = ["HP2Ship", "Help", "Quit"]
-scale = 10
+ogimg=[Image.open('IdeaImages\gameType.png')] #, Image.open('SourceImages\HelpS.png'), Image.open('SourceImages\QuitS.png')]
+finNames = ["gameType", "Help", "Quit"]
+scale = 20
 
 for x in range(len(ogimg)):
     #resize
