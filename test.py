@@ -1,8 +1,2 @@
-a = [1,2,3]
-b = [4,5,6]
-c = [[1,4],[2,5]]
-for av, bv, in c:
-    print(av,bv)
-
-x = zip(a,b)
-print(tuple(x))
+for x in range(1,1):
+    print("hello")
