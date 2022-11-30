@@ -1,9 +1,8 @@
 from Board import Board
 
 class Player():
-    def __init__(self, pNum): # 0 or 1
+    def __init__(self): # 0 or 1
         self._board = Board(10,10)
-        self._pNum = pNum
 
     def attack(self, x,y): # index starts at 0
         return self._board.attack(x,y)
@@ -13,6 +12,9 @@ class Player():
 
     def getBoard(self):
         return self._board
+
+    def getName(self):
+        return self._name
 
     def getSBoard(self):
         return self._board.getSBoard()

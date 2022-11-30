@@ -1,6 +1,4 @@
 from abc import abstractclassmethod
-from cmath import rect
-import math
 from Game import Game
 from pprint import pprint as pp
 import os
@@ -11,19 +9,34 @@ from art import *
 class UI():
     def __init__(self):
         self._game = Game()
-        self._numTurns = 4
+        self._numShips = 4
 
     @abstractclassmethod
-    def run():
+    def __run():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __local():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __signUp():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __logIn():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __help():
         raise NotImplementedError
 
 class GUI(UI):
-    WIDTH = 960
-    HEIGHT = 540
-    SCALE = 2.0
-
     def __init__(self):
         super().__init__()
+        self._scale = 2.0
+        self._width = 960
+        self._height = 540
 
     def run(self):
         self.__menu()
@@ -31,16 +44,16 @@ class GUI(UI):
     def __menu(self):
         # Initialise
         pg.init()
-        screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
+        screen = pg.display.set_mode((self._width, self._height))
         running = True
 
         # Buttons
         rects = []
-        buttonImages = [pg.image.load(f"FinImages\Play{self.SCALE}.png"), pg.image.load(f"FinImages\Help{self.SCALE}.png"), pg.image.load(f"FinImages\Quit{self.SCALE}.png")] 
-        bgImage = pg.image.load(f"FinImages\MenuBackGround{self.SCALE}.png") 
+        buttonImages = [pg.image.load(f"FinImages\Play{self._scale}.png"), pg.image.load(f"FinImages\Help{self._scale}.png"), pg.image.load(f"FinImages\Quit{self._scale}.png")] 
+        bgImage = pg.image.load(f"FinImages\MenuBackGround{self._scale}.png") 
         for x in range(len(buttonImages)):
             rects.append(buttonImages[x].get_rect())
-            rects[x].update(int(round((350/960)*self.WIDTH)), int(round((190/540)*self.HEIGHT)) + x*int(round((110/540)*self.HEIGHT)), rects[x].width, rects[x].height)
+            rects[x].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + x*int(round((110/540)*self._height)), rects[x].width, rects[x].height)
 
         while running:
             for event in pg.event.get():
@@ -54,7 +67,7 @@ class GUI(UI):
                             if rects[x].collidepoint(point):
                                 pg.quit()
                                 if x == 0:
-                                    self.__local()
+                                    self.__playMenu()
                                 elif x == 1:
                                     self.__help()
                                 else:
@@ -68,42 +81,42 @@ class GUI(UI):
             pg.display.update()
 
     def __playMenu(self):
-        pass
+        self.__local()
 
     def __local(self):
         # Initialise
         pg.init()
-        screen = pg.display.set_mode((self.WIDTH, self.HEIGHT))
+        screen = pg.display.set_mode((self._width, self._height))
         running = True
         currPlayer = 0
 
         # Ships
         rects = []
         shipAttach = [0, 0, 0]
-        shipImages = [pg.image.load(f"FinImages\HP2Ship{self.SCALE}.png"), pg.image.load(f"FinImages\HP2Ship{self.SCALE}.png"), pg.image.load(f"FinImages\HP2Ship{self.SCALE}.png")] 
-        shipHP = [2,2,2,2]
-        shipRotation = ['h','h','h','h']
-        shipLoc = [[[0,0] for _ in range(len(shipAttach))], [[0,0] for _ in range(len(shipAttach))]]
+        shipImages = [pg.image.load(f"FinImages\HP2Ship{self._scale}.png"), pg.image.load(f"FinImages\HP2Ship{self._scale}.png"), pg.image.load(f"FinImages\HP2Ship{self._scale}.png")] 
+        shipHP = [2, 2, 2, 2]
+        shipRotation = [0, 0, 0]
+        shipLoc = [[[0, 0] for _ in range(len(shipAttach))], [[0,0] for _ in range(len(shipAttach))]] # Stores the top and left coordinates of ships.
         for x in range(len(shipImages)):
             rects.append(shipImages[x].get_rect())
             #scale these correctly, each square is 40*40 pixels.
 
         # Buttons
-        buttonImages = [pg.image.load(f"FinImages\HP2Ship{self.SCALE}.png")]
+        buttonImages = [pg.image.load(f"FinImages\HP2Ship{self._scale}.png")]
         buttonRects = []
         for x in range(len(buttonImages)):
             buttonRects.append(buttonImages[x].get_rect())
-        buttonRects[0].update(0, self.HEIGHT-(2*buttonRects[0].height), buttonRects[0].width, buttonRects[0].height)
+        buttonRects[0].update(0, self._height-(2*buttonRects[0].height), buttonRects[0].width, buttonRects[0].height)
 
         # Grid
         WidthInSquares = 10 # Dimensions of the grid in squares.
         HeightInSquares = 10 
-        squareSize = self.HEIGHT//(HeightInSquares+1) # +1 to give a little bit of space.
+        squareSize = self._height//(HeightInSquares+1) # +1 to give a little bit of space.
         # Edges of the grid
-        xLeft = self.WIDTH//2 - 5*squareSize   # Edges are five squares from the centre.
-        xRight = self.WIDTH//2 + 5*squareSize
-        yTop = self.HEIGHT//2 - 5*squareSize
-        yBot = self.HEIGHT//2 + 5*squareSize
+        xLeft = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
+        xRight = self._width//2 + 5*squareSize
+        yTop = self._height//2 - 5*squareSize
+        yBot = self._height//2 + 5*squareSize
         squares = []
         # Storing grid object in squares 
         for x in range(xLeft, xRight, squareSize):
@@ -120,10 +133,10 @@ class GUI(UI):
                     if event.key == pg.K_r: 
                         for x in range(len(shipAttach)):
                             if shipAttach[x] == 1:
-                                if shipRotation[x] == 'h':
-                                    shipRotation[x] = 'v'
+                                if shipRotation[x]:
+                                    shipRotation[x] = 0
                                 else:
-                                    shipRotation[x] = 'h'
+                                    shipRotation[x] = 1
                                 shipImages[x] = pg.transform.rotate(shipImages[x], -90)
                                 rects[x] = shipImages[x].get_rect()
                                 break
@@ -156,11 +169,11 @@ class GUI(UI):
                                 shipAttach[x] = 2
 
                                 # An issue with this line: the (point[a] - squaresize/2) depends on the ships HP and its rotation (e.g. how much u minus depends.)
-                                if shipRotation[x] == 'h':
-                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
-                                else:
+                                if shipRotation[x]:
                                     rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) - squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
-
+                                else:
+                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
+                                
                                 # self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 # Move the above line to something that comes after the user has press a "done" button
                                 break
@@ -182,9 +195,6 @@ class GUI(UI):
             pg.display.update()
 
 
-
-
-
         # Attacking starts:
 
         currPlayer = 0
@@ -192,7 +202,7 @@ class GUI(UI):
         shrinkScale = 1.15
         squareSize = int(squareSize//shrinkScale)  # Scale it down so that two grids can fit.
         # for x in shipImages:
-        #     x = pg.image.load(f"FinImages\HP2Ship{self.SCALE/shrinkScale}.png")
+        #     x = pg.image.load(f"FinImages\HP2Ship{self._scale/shrinkScale}.png")
 
         # Edges of the grids
         tempX = xLeft
@@ -213,12 +223,17 @@ class GUI(UI):
             for y in range(yTop, yBot, squareSize):
                 enemySquares.append(pg.Rect(x,y,squareSize,squareSize))
 
-        # Game loop            
+        # Game loop   
+        postHit = False         
         while running:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     running = False
                     pg.quit()
+                elif event.type == pg.KEYDOWN:
+                    if event.type == pg.K_a:
+                        postHit = False
+                        print("a")
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         point = pg.mouse.get_pos()
@@ -240,41 +255,49 @@ class GUI(UI):
                                 elif result == -2:
                                     # error or already attacked ship
                                     currPlayer = (currPlayer + 1) % 2 # Because we dont want to currPlayer to remain the same in 2 lines.
-                                    pass
+                                postHit = True
                                 currPlayer = (currPlayer + 1) % 2
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
 
             screen.fill((0,0,0))
 
-            for x in range(len(rects)):
-                rects[x].update((shipLoc[currPlayer][x][0]-(tempX-xLeft))//shrinkScale, (shipLoc[currPlayer][x][1]-(tempY-yTop))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
-                screen.blit(shipImages[x], rects[x])
+            if not postHit:
+                for x in range(len(rects)):
+                    rects[x].update((shipLoc[currPlayer][x][0]-(tempX-xLeft))//shrinkScale, (shipLoc[currPlayer][x][1]-(tempY-yTop))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
+                    screen.blit(shipImages[x], rects[x])
 
-            mySecretBoard = self._game.getSBoard(currPlayer)
-            for x in range(len(squares)):
-                if mySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
-                    pg.draw.rect(screen, (255,255,255), squares[x], 1) # White grid for an unknown
-                elif mySecretBoard[x%10][x//10] == -1:
-                    pg.draw.rect(screen, (255,0,0), squares[x]) # Red fill for a hit ship
-                else:
-                    pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
-            
-            enemySecretBoard = self._game.getSBoard((currPlayer+1)%2)  #0 = empty, -1 = hit ship, -2 = hit empty
-            for x in range(len(enemySquares)):
-                if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
-                    pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
-                elif enemySecretBoard[x%10][x//10] == -1:
-                    pg.draw.rect(screen, (255,0,0), enemySquares[x]) # Red fill for a hit ship
-                else:
-                    pg.draw.rect(screen, (0,0,255), enemySquares[x]) # Blue fill for known empty
-
+                mySecretBoard = self._game.getSBoard(currPlayer)
+                for x in range(len(squares)):
+                    if mySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
+                        pg.draw.rect(screen, (255,255,255), squares[x], 1) # White grid for an unknown
+                    elif mySecretBoard[x%10][x//10] == -1:
+                        pg.draw.rect(screen, (255,0,0), squares[x]) # Red fill for a hit ship
+                    else:
+                        pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
+                
+                enemySecretBoard = self._game.getSBoard((currPlayer+1)%2)  #0 = empty, -1 = hit ship, -2 = hit empty
+                for x in range(len(enemySquares)):
+                    if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
+                        pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
+                    elif enemySecretBoard[x%10][x//10] == -1:
+                        pg.draw.rect(screen, (255,0,0), enemySquares[x]) # Red fill for a hit ship
+                    else:
+                        pg.draw.rect(screen, (0,0,255), enemySquares[x]) # Blue fill for known empty
+            else:
+                # Display the hitting animation, or a "press space to resume screen."
+                pass
+            print(1)
             pg.display.update()
-
 
     def __help(self):
         pass
 
+    def __signUp(self):
+        pass
+
+    def __logIn(self):
+        pass
 
 class Terminal(UI):
     def __init__(self):
@@ -300,7 +323,7 @@ class Terminal(UI):
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
-            y = self._numTurns
+            y = self._numShips
             while y > 0:
                 if self._game.addShip(x, input((f"{y} Ships in format xyrh"))) == -1:
                     print("Invalid ship position, current state of board:")
@@ -347,4 +370,5 @@ class Terminal(UI):
     def __logIn():
         pass
 
-    
+    def __help():
+        pass

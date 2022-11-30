@@ -1,11 +1,8 @@
-from copy import copy
-
 class Board():
     def __init__(self, width, height): # ships passed in as xyrh
         self._width = width
         self._height = height
         self._grid = [[0 for _ in range(width)] for _ in range(height)]
-        self._ships = []
         self._shipHP = 0
         self._sGrid = [[0 for _ in range(width)] for _ in range(height)]
         # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
@@ -27,12 +24,10 @@ class Board():
         if self._sGrid[y][x] == -2 : # if already hit
             return -2
 
-    def shipHP(self): # returns total ship HP
+    def getShipHP(self): # returns total ship HP
         return self._shipHP
 
     def addShip(self, ship):
-        self._ships.append(ship)
-
         try:
             if ship[2] == "v":
                 for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
