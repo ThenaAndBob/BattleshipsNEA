@@ -113,14 +113,14 @@ class GUI(UI):
         HeightInSquares = 10 
         squareSize = self._height//(HeightInSquares+1) # +1 to give a little bit of space.
         # Edges of the grid
-        xLeft = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
-        xRight = self._width//2 + 5*squareSize
-        yTop = self._height//2 - 5*squareSize
-        yBot = self._height//2 + 5*squareSize
+        left = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
+        right = self._width//2 + 5*squareSize
+        top = self._height//2 - 5*squareSize
+        bot = self._height//2 + 5*squareSize
         squares = []
         # Storing grid object in squares 
-        for x in range(xLeft, xRight, squareSize):
-            for y in range(yTop, yBot, squareSize):
+        for x in range(left, right, squareSize):
+            for y in range(top, bot, squareSize):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
 
         # Loop for placing ships
@@ -148,7 +148,7 @@ class GUI(UI):
                         if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
                             # place down all ships and swap turns (and move ships back) or move on to actual game.
                             for x in range(len(rects)):
-                                self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                self._game.addShip(currPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 shipLoc[currPlayer][x] = [rects[x].left, rects[x].top]
                                 rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil
                             if currPlayer == 0:
@@ -170,11 +170,11 @@ class GUI(UI):
 
                                 # An issue with this line: the (point[a] - squaresize/2) depends on the ships HP and its rotation (e.g. how much u minus depends.)
                                 if shipRotation[x]:
-                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) - squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
+                                    rects[x].update(squareSize * round((point[0] - (left % squareSize) - squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
                                 else:
-                                    rects[x].update(squareSize * round((point[0] - (xLeft % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (xLeft % squareSize), squareSize * round((point[1] - (yTop % squareSize) - squareSize/2)/squareSize) + (yTop % squareSize), rects[x].width, rects[x].height)
+                                    rects[x].update(squareSize * round((point[0] - (left % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
                                 
-                                # self._game.addShip(currPlayer, f"{(rects[x].left - xLeft)//squareSize}{(rects[x].top-yTop)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                # self._game.addShip(currPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 # Move the above line to something that comes after the user has press a "done" button
                                 break
 
@@ -205,22 +205,22 @@ class GUI(UI):
         #     x = pg.image.load(f"FinImages\HP2Ship{self._scale/shrinkScale}.png")
 
         # Edges of the grids
-        tempX = xLeft
-        tempY = yTop
-        xLeft = int(squareSize)
-        xRight = int(2*xLeft + WidthInSquares*squareSize*2)   # 2*xLeft to leave a gap between the two grids.
-        yTop = int(squareSize)
-        yBot = int(yTop + HeightInSquares*squareSize)
+        tempX = left
+        tempY = top
+        left = int(squareSize)
+        right = int(2*left + WidthInSquares*squareSize*2)   # 2*left to leave a gap between the two grids.
+        top = int(squareSize)
+        bot = int(top + HeightInSquares*squareSize)
         squares = []
         enemySquares = []
         enemySecretBoard = []
         # Storing grid object in squares 
-        for x in range(xLeft, xRight//2, squareSize):
-            for y in range(yTop, yBot, squareSize):
+        for x in range(left, right//2, squareSize):
+            for y in range(top, bot, squareSize):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
         
-        for x in range(xRight//2 + xLeft, xRight, squareSize):
-            for y in range(yTop, yBot, squareSize):
+        for x in range(right//2 + left, right, squareSize):
+            for y in range(top, bot, squareSize):
                 enemySquares.append(pg.Rect(x,y,squareSize,squareSize))
 
         # Game loop   
@@ -231,7 +231,7 @@ class GUI(UI):
                     running = False
                     pg.quit()
                 elif event.type == pg.KEYDOWN:
-                    if event.type == pg.K_a:
+                    if event.key == pg.K_a:
                         postHit = False
                         print("a")
                 elif event.type == pg.MOUSEBUTTONDOWN:
@@ -240,8 +240,8 @@ class GUI(UI):
                         for x in range(len(enemySquares)):
                             if enemySquares[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # attack that square and swap sides
-                                coords = [squareSize * round((point[0] - ((xLeft + xRight//2 )% squareSize) - squareSize/2)/squareSize) + ((xLeft + xRight//2) % squareSize), squareSize * round((point[1] - (yTop % squareSize) - squareSize/2)/squareSize) + (yTop % squareSize)]
-                                coordinput = [(coords[0] - (xLeft+xRight//2))//squareSize, (coords[1] - (yTop))//squareSize]
+                                coords = [squareSize * round((point[0] - ((left + right//2 )% squareSize) - squareSize/2)/squareSize) + ((left + right//2) % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize)]
+                                coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
                                 result = self._game.attack(coordinput[0], coordinput[1], (currPlayer+1) % 2)
                                 if result == 2:
                                     # a hit and currPlayer won
@@ -252,10 +252,11 @@ class GUI(UI):
                                 elif result == -1:
                                     # a miss
                                     pass
-                                elif result == -2:
+                                postHit = True
+                                if result == -2:
                                     # error or already attacked ship
                                     currPlayer = (currPlayer + 1) % 2 # Because we dont want to currPlayer to remain the same in 2 lines.
-                                postHit = True
+                                    postHit = False
                                 currPlayer = (currPlayer + 1) % 2
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
@@ -264,7 +265,7 @@ class GUI(UI):
 
             if not postHit:
                 for x in range(len(rects)):
-                    rects[x].update((shipLoc[currPlayer][x][0]-(tempX-xLeft))//shrinkScale, (shipLoc[currPlayer][x][1]-(tempY-yTop))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
+                    rects[x].update((shipLoc[currPlayer][x][0]-(tempX-left))//shrinkScale, (shipLoc[currPlayer][x][1]-(tempY-top))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
                     screen.blit(shipImages[x], rects[x])
 
                 mySecretBoard = self._game.getSBoard(currPlayer)
@@ -287,7 +288,6 @@ class GUI(UI):
             else:
                 # Display the hitting animation, or a "press space to resume screen."
                 pass
-            print(1)
             pg.display.update()
 
     def __help(self):

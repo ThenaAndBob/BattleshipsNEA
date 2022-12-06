@@ -3,9 +3,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #Read image
-ogimg=[Image.open('IdeaImages\gameType.png')] #, Image.open('SourceImages\HelpS.png'), Image.open('SourceImages\QuitS.png')]
-finNames = ["gameType", "Help", "Quit"]
-scale = 20
+ogimg=[Image.open('IdeaImages\delSoon.png')] #, Image.open('SourceImages\HelpS.png'), Image.open('SourceImages\QuitS.png')]
+finNames = ["LoginScreen", "Help", "Quit"]
+scale = 2
 
 for x in range(len(ogimg)):
     #resize
@@ -13,7 +13,7 @@ for x in range(len(ogimg)):
     res=ogimg[x].resize(n_size,Image.NEAREST)
 
     #save image
-    res.save(f"FinImages\{finNames[x]}{20/scale}.png") # The number after is scale relative to 1920 * 1080 (e.g. 2 --> 1920/2 = 960)
+    res.save(f"IdeaImages\{finNames[x]}{20/scale}.png") # The number after is scale relative to 1920 * 1080 (e.g. 2 --> 1920/2 = 960)
 
     #display image
     plt.imshow(res)
