@@ -13,8 +13,5 @@ class Player():
     def getBoard(self):
         return self._board
 
-    def getName(self):
-        return self._name
-
     def getSBoard(self):
         return self._board.getSBoard()

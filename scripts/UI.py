@@ -31,10 +31,13 @@ class UI():
     def __help():
         raise NotImplementedError
 
+    def hash():
+        pass
+
 class GUI(UI):
     def __init__(self):
         super().__init__()
-        self._scale = 2.0
+        self._scale = 20
         self._width = 960
         self._height = 540
 
@@ -49,8 +52,50 @@ class GUI(UI):
 
         # Buttons
         rects = []
+        buttonImages = [pg.image.load(f"FinalImages\Scale{self._scale}\LoginButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\SignUpButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\GuestButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\QuitButton.png")] 
+        backgroundImage = pg.image.load(f"FinalImages\Scale{self._scale}\MainMenu.png") 
+        for image in buttonImages:
+            rects.append(image.get_rect())
+        # Position buttons correctly.
+        rects[0].update(int(round((5/96)*self._width)), int(round((19/54)*self._height)), rects[0].width, rects[0].height)
+        rects[1].update(int(round((5/96)*self._width)), int(round((38/54)*self._height)), rects[1].width, rects[1].height)
+        rects[2].update(int(round((53/96)*self._width)), int(round((19/54)*self._height)), rects[1].width, rects[2].height)
+        rects[3].update(int(round((53/96)*self._width)), int(round((38/54)*self._height)), rects[1].width, rects[3].height)
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                elif event.type == pg.MOUSEBUTTONDOWN: # Check if player pressed mouse
+                    if event.button == 1: # Check if player pressed left mouse button
+                        point = pg.mouse.get_pos() 
+                        for i, rect in enumerate(rects):
+                            if rect.collidepoint(point):
+                                if i == 0:
+                                    self.__logIn()
+                                elif i == 1:
+                                    self.__signUp()
+                                elif i == 2:
+                                    self.__local()
+                                else:
+                                    running = False
+
+            screen.blit(backgroundImage, (0,0))
+            for image, rect in zip(buttonImages, rects):
+                screen.blit(image, rect)
+
+            pg.display.update()
+
+    def __playMenu(self):
+        # Initialise
+        pg.init()
+        screen = pg.display.set_mode((self._width, self._height))
+        running = True
+
+        # Buttons
+        rects = []
         buttonImages = [pg.image.load(f"FinImages\Play{self._scale}.png"), pg.image.load(f"FinImages\Help{self._scale}.png"), pg.image.load(f"FinImages\Quit{self._scale}.png")] 
-        bgImage = pg.image.load(f"FinImages\MenuBackGround{self._scale}.png") 
+        backgroundImage = pg.image.load(f"FinImages\MenuBackGround{self._scale}.png") 
         for x in range(len(buttonImages)):
             rects.append(buttonImages[x].get_rect())
             rects[x].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + x*int(round((110/540)*self._height)), rects[x].width, rects[x].height)
@@ -63,25 +108,22 @@ class GUI(UI):
                     if event.button == 1:
                         # Check which menu button it collided with and call that function.
                         point = pg.mouse.get_pos()
-                        for x in range(len(rects)):
-                            if rects[x].collidepoint(point):
+                        for i, rect in enumerate(rects):
+                            if rect.collidepoint(point):
                                 pg.quit()
-                                if x == 0:
-                                    self.__playMenu()
-                                elif x == 1:
+                                if i == 0:
+                                    self.__local()
+                                elif i == 1:
                                     self.__help()
                                 else:
                                     running = False
                                     pg.quit()
 
-            screen.blit(bgImage, (0,0))
+            screen.blit(backgroundImage, (0,0))
             for x in range (len(rects)):
                 screen.blit(buttonImages[x], rects[x])
 
             pg.display.update()
-
-    def __playMenu(self):
-        self.__local()
 
     def __local(self):
         # Initialise
@@ -93,7 +135,7 @@ class GUI(UI):
         # Ships
         rects = []
         shipAttach = [0, 0, 0]
-        shipImages = [pg.image.load(f"FinImages\HP2Ship{self._scale}.png"), pg.image.load(f"FinImages\HP2Ship{self._scale}.png"), pg.image.load(f"FinImages\HP2Ship{self._scale}.png")] 
+        shipImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png")] 
         shipHP = [2, 2, 2, 2]
         shipRotation = [0, 0, 0]
         shipLoc = [[[0, 0] for _ in range(len(shipAttach))], [[0,0] for _ in range(len(shipAttach))]] # Stores the top and left coordinates of ships.
@@ -102,7 +144,7 @@ class GUI(UI):
             #scale these correctly, each square is 40*40 pixels.
 
         # Buttons
-        buttonImages = [pg.image.load(f"FinImages\HP2Ship{self._scale}.png")]
+        buttonImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png")]
         buttonRects = []
         for x in range(len(buttonImages)):
             buttonRects.append(buttonImages[x].get_rect())
@@ -364,9 +406,10 @@ class Terminal(UI):
                     input("Press enter to change turns and clear terminal")
                 os.system('cls||clear')
 
-    def __signUp():
-        pass
-
+    def __signUp(self):
+        username = input("Username?")
+        password = input("Password?")
+        self.hash(password)
     def __logIn():
         pass
 

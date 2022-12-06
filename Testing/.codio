@@ -1,0 +1,17 @@
+{
+    "commands": {
+        "Create": "python3 create.py",
+        "Insert": "python3 insert.py",
+        "Select": "python3 select.py",
+        "Update": "python3 update.py",
+        "Sqlite3": "sqlite3 test.db",
+        "Browser": "sqlitebrowser test.db"
+    },
+    "preview": {
+        "Virtual Desktop": "https://{{domain3000}}/",
+        "Project Index (static)": "https://{{domain}}/{{index}}",
+        "Current File (static)": "https://{{domain}}/{{filepath}}",
+        "Box URL": "http://{{domain3000}}/",
+        "Box URL SSL": "https://{{domain3000}}/"
+    }
+}
