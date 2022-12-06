@@ -4,12 +4,13 @@ from pprint import pprint as pp
 import os
 import pygame as pg
 from art import *
-
+from network import Network
 
 class UI():
     def __init__(self):
         self._game = Game()
         self._numShips = 4
+        self._network = Network()
 
     @abstractclassmethod
     def __run():
@@ -31,8 +32,8 @@ class UI():
     def __help():
         raise NotImplementedError
 
-    def hash():
-        pass
+    def hash(self, password):
+        return password
 
 class GUI(UI):
     def __init__(self):
@@ -346,6 +347,9 @@ class Terminal(UI):
         super().__init__()
 
     def run(self):
+        self.__mainMenu()
+    
+    def __mainMenu(self):
         print(text2art("Battleships"))
         print("Main Menu:")
         print("1. Log in")
@@ -359,8 +363,52 @@ class Terminal(UI):
         elif opt == "2":
             self.__signUp()
         elif opt == "3":
+            self.__playMenu()
+
+    def __signUp(self):
+        valid = "not_unique"
+        while valid == "not_unique":
+            print("--The username must be unique--")
+            username = input("Username - ")
+            password = input("Password - ")
+            if " " in username or " " in password:
+                print("Username or password cannot have spaces!")
+            else:
+                valid = self._network.send(f"signUp {username} {self.hash(password)}")
+            print("")
+            
+        self.__playMenu()
+
+    def __logIn(self):
+        valid = "false"
+        while valid == "false":
+            username = input("Username - ")
+            password = input("Password - ")
+            print("")
+            valid = self._network.send(f"login {username} {self.hash(password)}")
+        
+        self.__playMenu()
+
+
+        pass
+
+    def __playMenu(self):
+        print(text2art("Battleships"))
+        print("1. Local")
+        print("2. Network")
+        print("3. AI Opponent")
+        print("4. Help")
+        print("5. Quit")
+        opt = input()
+        if opt == "1":
             self.__local()
-    
+        elif opt == "2":
+            self.__network()
+        elif opt == "3":
+            self.__AI()
+        elif opt == "4":
+            self.__help()
+   
     def __local(self):
         for x in range(2):
             print(f"Player {x+1} turn")
@@ -405,13 +453,13 @@ class Terminal(UI):
                         print("Miss!")
                     input("Press enter to change turns and clear terminal")
                 os.system('cls||clear')
-
-    def __signUp(self):
-        username = input("Username?")
-        password = input("Password?")
-        self.hash(password)
-    def __logIn():
+        
+    def __network(self):
         pass
 
     def __help():
+        print("Advice")
+
+    def __AI(self):
         pass
+
