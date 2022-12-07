@@ -10,7 +10,7 @@ class UI():
     def __init__(self):
         self._game = Game()
         self._numShips = 4
-        self._network = Network()
+        # self._network = Network()
 
     @abstractclassmethod
     def __run():
@@ -131,7 +131,7 @@ class GUI(UI):
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         running = True
-        currPlayer = 0
+        currentPlayer = 0
 
         # Ships
         rects = []
@@ -191,11 +191,11 @@ class GUI(UI):
                         if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
                             # place down all ships and swap turns (and move ships back) or move on to actual game.
                             for x in range(len(rects)):
-                                self._game.addShip(currPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
-                                shipLoc[currPlayer][x] = [rects[x].left, rects[x].top]
+                                self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                shipLoc[currentPlayer][x] = [rects[x].left, rects[x].top]
                                 rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil
-                            if currPlayer == 0:
-                                currPlayer = 1
+                            if currentPlayer == 0:
+                                currentPlayer = 1
                             else:
                                 running = False
                             
@@ -217,7 +217,7 @@ class GUI(UI):
                                 else:
                                     rects[x].update(squareSize * round((point[0] - (left % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
                                 
-                                # self._game.addShip(currPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                # self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 # Move the above line to something that comes after the user has press a "done" button
                                 break
 
@@ -240,7 +240,7 @@ class GUI(UI):
 
         # Attacking starts:
 
-        currPlayer = 0
+        currentPlayer = 0
         running = True
         shrinkScale = 1.15
         squareSize = int(squareSize//shrinkScale)  # Scale it down so that two grids can fit.
@@ -276,7 +276,6 @@ class GUI(UI):
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         postHit = False
-                        print("a")
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         point = pg.mouse.get_pos()
@@ -285,22 +284,22 @@ class GUI(UI):
                                 # attack that square and swap sides
                                 coords = [squareSize * round((point[0] - ((left + right//2 )% squareSize) - squareSize/2)/squareSize) + ((left + right//2) % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize)]
                                 coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
-                                result = self._game.attack(coordinput[0], coordinput[1], (currPlayer+1) % 2)
+                                result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1) % 2)
                                 if result == 2:
-                                    # a hit and currPlayer won
+                                    print(f"Print {currentPlayer} won!")
                                     running = False
                                 elif result == 1:
-                                    # a hit
+                                    print("Hit!")
                                     pass
                                 elif result == -1:
-                                    # a miss
+                                    print("Miss!")
                                     pass
                                 postHit = True
                                 if result == -2:
                                     # error or already attacked ship
-                                    currPlayer = (currPlayer + 1) % 2 # Because we dont want to currPlayer to remain the same in 2 lines.
+                                    currentPlayer = (currentPlayer + 1) % 2 # Because we dont want to currentPlayer to remain the same in 2 lines.
                                     postHit = False
-                                currPlayer = (currPlayer + 1) % 2
+                                currentPlayer = (currentPlayer + 1) % 2
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
 
@@ -308,10 +307,10 @@ class GUI(UI):
 
             if not postHit:
                 for x in range(len(rects)):
-                    rects[x].update((shipLoc[currPlayer][x][0]-(tempX-left))//shrinkScale, (shipLoc[currPlayer][x][1]-(tempY-top))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
+                    rects[x].update((shipLoc[currentPlayer][x][0]-(tempX-left))//shrinkScale, (shipLoc[currentPlayer][x][1]-(tempY-top))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
                     screen.blit(shipImages[x], rects[x])
 
-                mySecretBoard = self._game.getSBoard(currPlayer)
+                mySecretBoard = self._game.getSBoard(currentPlayer)
                 for x in range(len(squares)):
                     if mySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), squares[x], 1) # White grid for an unknown
@@ -320,7 +319,7 @@ class GUI(UI):
                     else:
                         pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
                 
-                enemySecretBoard = self._game.getSBoard((currPlayer+1)%2)  #0 = empty, -1 = hit ship, -2 = hit empty
+                enemySecretBoard = self._game.getSBoard((currentPlayer+1)%2)  #0 = empty, -1 = hit ship, -2 = hit empty
                 for x in range(len(enemySquares)):
                     if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
