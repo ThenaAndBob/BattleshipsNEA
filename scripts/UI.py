@@ -10,7 +10,10 @@ class UI():
     def __init__(self):
         self._game = Game()
         self._numShips = 4
-        # self._network = Network()
+        try:
+            self._network = Network()
+        except:
+            print("Could not connect to server")
 
     @abstractclassmethod
     def __run():

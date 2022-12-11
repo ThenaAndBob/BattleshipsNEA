@@ -5,6 +5,34 @@ import matplotlib.pylab as plt
 import numpy as np
 import time
 
+def validDirections(board, shipLength, xCoordinate, yCoordinate):
+    valid_directions = 0
+    for direction in [[1,0],[-1,0],[0,1],[0,-1]]:
+        checkX = xCoordinate
+        checkY = yCoordinate
+        for _ in range(shipLength):
+            if checkX < 0 or checkX >= len(board[0]) or checkY < 0 or checkY >= len(board):
+                valid_directions -= 1
+                break
+            elif board[checkY][checkX] != 0:
+                valid_directions -= 1
+                break
+            checkX += direction[0]
+            checkY += direction[1]
+            
+        valid_directions += 1
+    return valid_directions
+
+
+def rotationalSim(board, ships):
+    probabiltyBoard = [[0 for _ in range(len(board))] for _ in range(len(board[0]))]
+    for ship in ships:
+        for yC in range(len(board)):
+            for xC in range(len(board[yC])):
+                probabiltyBoard[yC][xC] += validDirections(board, ship, xC, yC)
+    return probabiltyBoard
+
+
 def isValid(direction, yC, xC, taken, shipLength, width, height):
     if direction == 0 or direction == 2:
         if direction == 0:
@@ -59,7 +87,8 @@ def aiSims(board, ships): # ships is a list of ints, since we only need the leng
 
 t1 = time.perf_counter()
 board = [[0 for _ in range(10)] for _ in range (10)]
-board = aiSims(board, [5,4,3,2])
+board[5][5] = 1
+board = rotationalSim(board, [5,4,3,2])
 t2 = time.perf_counter()
 
 print(t2-t1)

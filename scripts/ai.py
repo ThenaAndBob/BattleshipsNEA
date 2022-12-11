@@ -1,81 +1,38 @@
-from pprint import pprint 
-import random
-import seaborn as sns
-import matplotlib.pylab as plt
 import numpy as np
+from pprint import pprint
+import time
 
-# game area
-width = 10
-height = 10
-gA = [[0] * width for _ in range(height)]
+class AI():
+    def __init__(self):
+        self.SHIP_SIZES = [2,3,4,5]
+        self.SHOT_MAP = np.zeros([10, 10])
 
-# sim stats
-sims = 10000
-numShips = 10
-size = 3
-# dirs = [up, right, down, left]
+    def gen_prob_map(self):
+        prob_map = np.zeros([10, 10])
+        for ship_size in self.SHIP_SIZES:
+            use_size = ship_size - 1
+            # check where a ship will fit on the board
+            for row in range(10):
+                for col in range(10):
+                    if self.SHOT_MAP[row][col] != 1:
+                        # get potential ship endpoints
+                        endpoints = []
+                        # add 1 to all endpoints to compensate for python indexing
+                        if row - use_size >= 0:
+                            endpoints.append(((row - use_size, col), (row + 1, col + 1)))
+                        if row + use_size <= 9:
+                            endpoints.append(((row, col), (row + use_size + 1, col + 1)))
+                        if col - use_size >= 0:
+                            endpoints.append(((row, col - use_size), (row + 1, col + 1)))
+                        if col + use_size <= 9:
+                            endpoints.append(((row, col), (row + 1, col + use_size + 1)))
+                        pprint(endpoints)
+                        for (start_row, start_col), (end_row, end_col) in endpoints:
+                            if np.all(self.SHOT_MAP[start_row:end_row, start_col:end_col] == 0):
+                                prob_map[start_row:end_row, start_col:end_col] += 1
+        return prob_map
 
-for _ in range(sims):
-    taken = []
-    for _ in range(numShips):
-        while True:
-            x = random.randint(0, width-1)
-            y = random.randint(0, height-1)
-            dir = random.randint(0, 3)
-            if dir == 0:
-                if y - size >= -1:
-                    for c in range(size):
-                        if (y - c,x) in taken:
-                            break
-                    else:
-                        for c in range(size):
-                            gA[y - c][x] += 1
-                            taken.append((y - c,x))
-                        break
-            elif dir == 1:
-                if x + size <= width:
-                    for c in range(size):
-                        if (y,x+c) in taken:
-                            break
-                    else:
-                        for c in range(size):
-                            gA[y][x+c] += 1
-                            taken.append((y,x+c))
-                        break
-            elif dir == 2:
-                if y + size <= height:
-                    for c in range(size):
-                        if (y+c,x) in taken:
-                            break
-                    else:
-                        for c in range(size):
-                            gA[y+c][x] += 1
-                            taken.append((y+c,x))
-                        break
-            elif dir == 3:
-                if x - size >= -1:
-                    for c in range(size):
-                        if (y,x-c) in taken:
-                            break
-                    else:
-                        for c in range(size):
-                            gA[y][x-c] += 1
-                            taken.append((y,x-c))
-                        break
-
-max = np.amax(gA)
-print(max)
-for y in range(height):
-    go = False
-    for x in range(width):
-        if gA[y][x] == max:
-            print(x,y)
-            break
-    else:
-        go = True
-    if not go:
-        break
-
-pprint(gA)
-ax = sns.heatmap(gA, linewidth=0.5)
-plt.show()
+timeS = time.perf_counter()
+myAI = AI()
+pprint(myAI.gen_prob_map())
+print(time.perf_counter() - timeS)
