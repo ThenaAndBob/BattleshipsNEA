@@ -1,7 +1,7 @@
 from Board import Board
 
 class Player():
-    def __init__(self): # 0 or 1
+    def __init__(self):
         self._board = Board(10,10)
 
     def attack(self, x,y): # index starts at 0

@@ -27,25 +27,29 @@ class Board():
     def getShipHP(self): # returns total ship HP
         return self._shipHP
 
-    def addShip(self, ship):
+    def addShip(self, ship): # string of 4 numbers
         try:
-            if ship[2] == "v":
+            if ship[2] == "1":
                 for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
                     if self._grid[y][int(ship[0])] == 1:
                         return -1
-            elif ship[2] == "h":
+            elif ship[2] == "0":
                 for x in range(int(ship[0]), int(ship[0])+int(ship[3])):
                     if self._grid[int(ship[1])][x] == 1:
                         return -1
-        except IndexError:
+        except IndexError as e:
+            print(e)
             return -1
 
-        if ship[2] == "v":
+        if ship[2] == "1":
             for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
                 self._grid[y][int(ship[0])] = 1
-        elif ship[2] == "h":
+        elif ship[2] == "0":
             for x in range(int(ship[0]), int(ship[0])+int(ship[3])):
                 self._grid[int(ship[1])][x] = 1
+        else:
+            print("Rotation of ship doesn't work")
+            return -1
         self._shipHP += int(ship[3])
         return 1
 
