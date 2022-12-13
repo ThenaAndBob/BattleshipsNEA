@@ -31,7 +31,7 @@ class Player():
             return result
 
     def getBoard(self):
-        return self._board
+        return self._board.getBoard()
 
     def getSBoard(self):
         return self._board.getSBoard()

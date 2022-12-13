@@ -8,6 +8,8 @@ class Board():
         # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
 
     def attack(self,x,y): # Index starts at 0. 
+        if x < 0 or x >= self._width or y < 0 or y >= self._height:
+            return -2
         try:
             if self._grid[y][x] == 1: # if hit.
                 self._grid[y][x] = -1
@@ -22,6 +24,8 @@ class Board():
             self._sGrid[y][x] = -2
             return -1
         if self._sGrid[y][x] == -2 : # if already hit
+            return -2
+        if self._grid[y][x] == -1:
             return -2
 
     def getShipHP(self): # returns total ship HP
@@ -56,9 +60,6 @@ class Board():
     def getSBoard(self):
         return self._sGrid
 
-    def __repr__(self):
-        rep = ""
-        for x in self._grid:
-            rep += str(x) + "\n"
-        return rep
+    def getBoard(self):
+        return self._grid
 

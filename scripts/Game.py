@@ -12,7 +12,10 @@ class Game():
         self._players = Game.players
 
     def attack(self,x,y,playerID): # Playerd ID = 0 or 1
-        return self._players[playerID].attack(x,y) # index starts at 0 
+        result = self._players[playerID].attack(x,y) # index starts at 0 
+        if isinstance(self._players[(playerID +1)%2], AI):
+                self._players[(playerID +1)%2].hitFeedback(result, int(x),int(y))
+        return result
 
     def getPlayer(self, playerID):
         return self._players[playerID]
@@ -30,7 +33,8 @@ class Game():
         return self._players[1].getShipPlacement(Game.ships[shipIndex])
 
     def getAIAttack(self):
-        return self._players[1].getAttack(self._players[0].getShips())
+        print(self._players[0].getShips())
+        return self._players[1].getAttack(self._players[0].getShips(), self._players[0].getSBoard())
 
     @staticmethod
     def getNumShips():
@@ -38,6 +42,7 @@ class Game():
 
     @staticmethod
     def addStartShip(ship):
+        print("Ship added:", ship)
         Game.ships.append(ship)
     
     @staticmethod
@@ -46,13 +51,18 @@ class Game():
 
     @staticmethod
     def changeAI(ai):
+        print("Ai:", ai)
+        ai = int(ai)
         if ai == 0:
+            print("Removing AI")
             Game.players = [Player(Game.width, Game.height), Player(Game.width, Game.height)]
         else:
+            print("Adding AI")
             Game.players = [Player(Game.width, Game.height), AI(Game.width, Game.height, ai)]
 
     @staticmethod
     def changeBoardDimensions(newWidth, newHeight):
+        print("New board dimensions", newWidth, newHeight)
         Game.width = newWidth
         Game.height = newHeight
         Game.players = [Player(newWidth, newHeight), Player(newWidth, newHeight)]

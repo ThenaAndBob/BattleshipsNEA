@@ -407,13 +407,13 @@ class Terminal(UI):
             self.__help()
    
     def __getShipInput(self, x, ai, y): # x = player number, ai = ai difficulty, y = index of ship to be placed
-        if ai:
+        if int(ai) != 0:
             if x == 1:
                 return self._game.getAIShip(y)
         return input((f"Ship in format xyrh"))
 
     def __getAttackInput(self, x, ai): # x = player number, ai = ai difficulty
-        if ai:
+        if int(ai) != 0:
             if x == 1:
                 return self._game.getAIAttack()
         return input("Input square to attack (xy), can't attack the same square twice.")
@@ -421,6 +421,8 @@ class Terminal(UI):
 
     def __local(self,aiDifficulty): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
         Game.changeAI(aiDifficulty)
+        print("AI difficulty:", aiDifficulty)
+        self._game = Game()
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
@@ -433,7 +435,7 @@ class Terminal(UI):
                 y -= 1
             pp(self._game.getBoard(x))
             input("Press enter to change turns and clear terminal")
-            os.system('cls||clear')
+            os.system('cls')
 
         print("Time to attack!")
         play = True
@@ -447,23 +449,25 @@ class Terminal(UI):
                 for y in self._game.getSBoard((x+1)%2): # it returns a 2d array, so we print the rows.
                     print(y)
 
-                while True:
+                result = -2
+                while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
+                    attack = self.__getAttackInput(x, aiDifficulty)
                     result = -2
-                    while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
-                        attack = self.__getAttackInput()
-                        result = -2
+                    try:
                         result = self._game.attack(int(attack[0]), int(attack[1]), (x+1)%2) # Index starts at 0
-                    if result == 2:
-                        print("Hit!")
-                        print(f"Player {x+1} wins!")
-                        play = False
-                        break
-                    elif result == 1:
-                        print("Hit!")
-                    elif result == -1:
-                        print("Miss!")
-                    input("Press enter to change turns and clear terminal")
-                os.system('cls||clear')
+                    except IndexError:
+                        print("Invalid attack format")
+                if result == 2:
+                    print("Hit!")
+                    print(f"Player {x+1} wins!")
+                    play = False
+                elif result == 1:
+                    print("Hit!")
+                elif result == -1:
+                    print("Miss!")
+
+                input("Press enter to change turns and clear terminal")
+                os.system('cls')
 
     def __network(self):
         pass

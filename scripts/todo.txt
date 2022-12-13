@@ -3,3 +3,13 @@ Add AI
 consider changing mySecretBoard to an attackBoard for the other player.
 
 network games
+
+Tuesday - Thursday
+    Add AI
+    Add network games
+Friday
+    Allow saving and loading on user accounts
+Saturday-Sunday
+    Work on fixing sections 1-2
+Monday-Tuesday
+    Do section 3
