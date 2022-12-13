@@ -1,0 +1,5 @@
+Add AI
+
+consider changing mySecretBoard to an attackBoard for the other player.
+
+network games

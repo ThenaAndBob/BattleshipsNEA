@@ -1,6 +1,9 @@
 from UI import GUI, Terminal
 from sys import argv
 
+#python scripts\Battleships.py t
+#python scripts\Battleships.py g
+
 def usage():   
     print(f"""
 Usage: {argv[0]} [g | t]

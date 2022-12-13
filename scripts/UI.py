@@ -9,9 +9,9 @@ from network import Network
 class UI():
     def __init__(self):
         self._game = Game()
-        self._numShips = 4
         try:
-            self._network = Network()
+            #self._network = Network()
+            pass
         except:
             print("Could not connect to server")
 
@@ -214,14 +214,11 @@ class GUI(UI):
                             if shipAttach[x] == 1: # If the ship is currently being held, place it down.
                                 shipAttach[x] = 2
 
-                                # An issue with this line: the (point[a] - squaresize/2) depends on the ships HP and its rotation (e.g. how much u minus depends.)
                                 if shipRotation[x]:
                                     rects[x].update(squareSize * round((point[0] - (left % squareSize) - squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
                                 else:
                                     rects[x].update(squareSize * round((point[0] - (left % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
                                 
-                                # self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
-                                # Move the above line to something that comes after the user has press a "done" button
                                 break
 
             screen.fill((0,0,0))
@@ -391,33 +388,45 @@ class Terminal(UI):
         
         self.__playMenu()
 
-
-        pass
-
     def __playMenu(self):
         print(text2art("Battleships"))
         print("1. Local")
         print("2. Network")
         print("3. AI Opponent")
         print("4. Help")
-        print("5. Quit")
+        print("5. Options")
+        print("6. Quit")
         opt = input()
         if opt == "1":
-            self.__local()
+            self.__local(0) # No ai
         elif opt == "2":
             self.__network()
         elif opt == "3":
-            self.__AI()
+            self.__local(input("What AI difficulty? 1,2 or 3"))
         elif opt == "4":
             self.__help()
    
-    def __local(self):
+    def __getShipInput(self, x, ai, y): # x = player number, ai = ai difficulty, y = index of ship to be placed
+        if ai:
+            if x == 1:
+                return self._game.getAIShip(y)
+        return input((f"Ship in format xyrh"))
+
+    def __getAttackInput(self, x, ai): # x = player number, ai = ai difficulty
+        if ai:
+            if x == 1:
+                return self._game.getAIAttack()
+        return input("Input square to attack (xy), can't attack the same square twice.")
+
+
+    def __local(self,aiDifficulty): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
+        Game.changeAI(aiDifficulty)
         for x in range(2):
             print(f"Player {x+1} turn")
             pp(self._game.getBoard(x))
-            y = self._numShips
+            y = Game.getNumShips()
             while y > 0:
-                if self._game.addShip(x, input((f"{y} Ships in format xyrh"))) == -1:
+                if self._game.addShip(x, self.__getShipInput(x,aiDifficulty, y-1)) == -1:
                     print("Invalid ship position, current state of board:")
                     pp(self._game.getBoard(x))
                     y += 1
@@ -435,13 +444,13 @@ class Terminal(UI):
                 pp(self._game.getBoard(x))
 
                 print(f"Player {((x+1)%2)+1} secret board:")
-                for y in self._game.getSBoard((x+1)%2): # it retruns a 2d array, so we print the rows.
+                for y in self._game.getSBoard((x+1)%2): # it returns a 2d array, so we print the rows.
                     print(y)
 
                 while True:
                     result = -2
                     while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
-                        attack = input("Input square to attack (xy), can't attack the same square twice.")
+                        attack = self.__getAttackInput()
                         result = -2
                         result = self._game.attack(int(attack[0]), int(attack[1]), (x+1)%2) # Index starts at 0
                     if result == 2:
@@ -455,13 +464,14 @@ class Terminal(UI):
                         print("Miss!")
                     input("Press enter to change turns and clear terminal")
                 os.system('cls||clear')
-        
+
     def __network(self):
         pass
 
     def __help():
         print("Advice")
 
-    def __AI(self):
+    def __options():
         pass
+
 
