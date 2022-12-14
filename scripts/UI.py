@@ -550,7 +550,10 @@ class Terminal(UI):
             elif 9 <= int(toChange) <= 12:
                 Game.changeSpecials(int(toChange)-9, newNum)
             elif toChange == "13":
-                Game.changeNumPlayers(newNum)
+                if newNum > 1:
+                    Game.changeNumPlayers(newNum)
+                else:
+                    print("Must be more than 2 or more players")
 
 
 
