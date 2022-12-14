@@ -130,7 +130,6 @@ class Game():
         Game.numPlayers = newNumPlayers
         Game.changeAI(0) # Updates Game.players
 
-
     @staticmethod
     def getNumPlayers():
         return Game.numPlayers        

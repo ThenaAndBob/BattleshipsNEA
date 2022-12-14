@@ -418,7 +418,7 @@ class Terminal(UI):
         if int(ai) != 0:
             if playerNumber == 1:
                 return self._game.getAIShip(y)
-        return input((f"Ship in format xyrh"))
+        return input((f"Ship in format xyr"))
 
     def __getAttackInput(self, playerNumber, ai): # x = player number, ai = ai difficulty
         if int(ai) != 0:
@@ -443,10 +443,11 @@ class Terminal(UI):
             pp(self._game.getBoard(playerNum))
 
             numShips = Game.getNumShips()
+            ships = Game.getShips()
 
-            while numShips > 0:
-                print(playerNum)
-                if self._game.addShip(playerNum, self.__getShipInput(playerNum, aiDifficulty, numShips-1)) == -1:
+            for ship in ships:
+                print(f"Player {playerNum+1} to place down ship of length {ship}")
+                while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, aiDifficulty, numShips-1)}{ship}") == -1:
                     print("Invalid ship position, current state of board:")
                     pp(self._game.getBoard(playerNum))
                     numShips += 1

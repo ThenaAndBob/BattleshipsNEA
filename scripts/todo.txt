@@ -1,7 +1,5 @@
 Need saving and loading
 
-options menu
-
 network games
 
 Tuesday - Thursday
