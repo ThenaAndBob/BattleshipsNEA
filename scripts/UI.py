@@ -428,20 +428,24 @@ class Terminal(UI):
         print(self._game.getSpecialCount(playerNumber)[:-2]) # Don't care about mines or hitstreak
         print("0 - normal, 1 - barrage, 2 - radar")
         attackType = int(input("What attack do you want to use?"))
-        return input("Input square to attack (xy), can't attack the same square twice."), attackType
+        if attackType <= 1:
+            return input("Input square to attack (xy), can't attack the same square twice."), attackType
+        return 0, attackType
 
     def __local(self,aiDifficulty): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
         Game.changeAI(aiDifficulty)
         print("AI difficulty:", aiDifficulty)
         self._game = Game()
+        numPlayers = Game.getNumPlayers()
 
-        for playerNum in range(2): # Placing ships.
+        for playerNum in range(numPlayers): # Placing ships.
             print(f"Player {playerNum+1} turn")
             pp(self._game.getBoard(playerNum))
 
             numShips = Game.getNumShips()
 
             while numShips > 0:
+                print(playerNum)
                 if self._game.addShip(playerNum, self.__getShipInput(playerNum, aiDifficulty, numShips-1)) == -1:
                     print("Invalid ship position, current state of board:")
                     pp(self._game.getBoard(playerNum))
@@ -456,35 +460,36 @@ class Terminal(UI):
         print("Time to attack!")
         play = True
         while play:
-            for playerNum in range(2):
+            for playerNum in range(numPlayers):
                 print(f"Player {playerNum+1} turn")
                 print(f"Player {playerNum+1} board:")
                 pp(self._game.getBoard(playerNum))
+                for deltaPlayer in range(1, numPlayers):
 
-                print(f"Player {((playerNum+1)%2)+1} secret board:")
-                for row in self._game.getSBoard((playerNum+1)%2): # it returns a 2d array, so we print the rows.
-                    print(row)
+                    print(f"Player {((playerNum+deltaPlayer) % numPlayers) + 1} secret board:")
+                    for row in self._game.getSBoard((playerNum+deltaPlayer) % numPlayers): # it returns a 2d array, so we print the rows.
+                        print(row)
 
-                result = -2
-                while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
-                    attackLocation, attackType = self.__getAttackInput(playerNum, aiDifficulty)
                     result = -2
-                    if attackType == 2:
-                        result = self._game.radar((playerNum+1)%2)
-                        print(f"There is a ship at x={result[0]}, y={result[1]}")
-                    else:
-                        try:
-                            result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), (playerNum+1)%2, attackType) # Index starts at 0
-                        except IndexError:
-                            print("Invalid attack format")
-                if result == 2:
-                    print("Hit!")
-                    print(f"Player {playerNum+1} wins!")
-                    play = False
-                elif result == 1:
-                    print("Hit!")
-                elif result == -1:
-                    print("Miss!")
+                    while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
+                        attackLocation, attackType = self.__getAttackInput(playerNum, aiDifficulty)
+                        result = -2
+                        if attackType == 2:
+                            result = self._game.radar((playerNum+deltaPlayer) % numPlayers)
+                            print(f"There is a ship at x={result[0]}, y={result[1]}")
+                        else:
+                            try:
+                                result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), (playerNum+deltaPlayer) % numPlayers, attackType) # Index starts at 0
+                            except IndexError:
+                                print("Invalid attack format")
+                    if result == 2:
+                        print("Hit!")
+                        print(f"Player {playerNum+1} wins!")
+                        play = False
+                    elif result == 1:
+                        print("Hit!")
+                    elif result == -1:
+                        print("Miss!")
 
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
@@ -504,6 +509,7 @@ class Terminal(UI):
             for ship in ships:
                 numShips[ship-1] += 1
             specialsCounts = Game.getSpecials()
+            numPlayers = Game.getNumPlayers()
 
             print("-----Options Menu-----")
             print(f"1. Grid Width {width}")
@@ -520,6 +526,7 @@ class Terminal(UI):
             print(f"10. Radar {specialsCounts[1]}")
             print(f"11. Mines {specialsCounts[2]}")
             print(f"12. Hit Streak {specialsCounts[3]}")
+            print(f"13. Number of players {numPlayers}")
             print("")
             print("Write the number of the thing you want to change, followed by what it should be changed to. (e.g. 11 -1)")
             print("Write 'E' to exit")
@@ -542,6 +549,8 @@ class Terminal(UI):
                 Game.changeShips(int(toChange) - 3, newNum)
             elif 9 <= int(toChange) <= 12:
                 Game.changeSpecials(int(toChange)-9, newNum)
+            elif toChange == "13":
+                Game.changeNumPlayers(newNum)
 
 
 

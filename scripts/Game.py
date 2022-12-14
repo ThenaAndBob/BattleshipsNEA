@@ -6,7 +6,8 @@ class Game():
     shipCounts = [0,1,1,1,0]
     width = 10
     height = 10
-    specialCounts = [0,0,0,False] # barrage, radar, mine
+    specialCounts = [0,0,0,False] # barrage, radar, mine, hitstreak
+    numPlayers = 2
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
 
@@ -14,7 +15,8 @@ class Game():
         self._players = Game.players
 
     def radar(self, playerID):
-        board = self._player[playerID].getBoard()
+        board = self._players[playerID].getBoard()
+        self._players[(playerID+1)%2].decrementSpecial(1)
         for y, row in enumerate(board):
             for x, value in enumerate(row):
                 if value == 1:
@@ -37,9 +39,6 @@ class Game():
                     if result == 2:
                         return result
             
-
-
-
     def getSpecialCount(self, playerId):
         return self._players[playerId].getSpecials()
 
@@ -113,10 +112,10 @@ class Game():
         print("Ai:", ai)
         ai = int(ai)
         if ai == 0:
-            print("Removing AI")
-            Game.players = [Player(Game.width, Game.height, Game.specialCounts), Player(Game.width, Game.height, Game.specialCounts)]
+            print("No AI")
+            Game.players = [Player(Game.width, Game.height, Game.specialCounts) for _ in range(Game.numPlayers)]
         else:
-            print("Adding AI")
+            print("2 Players with AI")
             Game.players = [Player(Game.width, Game.height, Game.specialCounts), AI(Game.width, Game.height, ai)]
 
     @staticmethod
@@ -126,4 +125,12 @@ class Game():
         Game.height = newHeight
         Game.players = [Player(newWidth, newHeight), Player(newWidth, newHeight)]
 
-        
+    @staticmethod
+    def changeNumPlayers(newNumPlayers):
+        Game.numPlayers = newNumPlayers
+        Game.changeAI(0) # Updates Game.players
+
+
+    @staticmethod
+    def getNumPlayers():
+        return Game.numPlayers        
