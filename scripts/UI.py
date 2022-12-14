@@ -399,7 +399,8 @@ class Terminal(UI):
             print("3. AI Opponent")
             print("4. Help")
             print("5. Options")
-            print("6. Quit")
+            print("6. Load Game")
+            print("7. Quit")
             opt = input()
             if opt == "1":
                 self.__local(0) # No ai
@@ -411,6 +412,8 @@ class Terminal(UI):
                 self.__help()
             elif opt == "5":
                 self.__options()
+            elif opt == "6":
+                self.__load()
             else:
                 break
    
@@ -556,6 +559,7 @@ class Terminal(UI):
                 else:
                     print("Must be more than 2 or more players")
 
-
+    def __load(self):
+        pass
 
 
