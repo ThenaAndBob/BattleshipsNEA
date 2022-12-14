@@ -1,6 +1,6 @@
-Add AI
+Need saving and loading
 
-consider changing mySecretBoard to an attackBoard for the other player.
+options menu
 
 network games
 

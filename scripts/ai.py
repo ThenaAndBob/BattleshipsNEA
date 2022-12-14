@@ -4,7 +4,7 @@ import numpy as np
 
 class AI(Player):
     def __init__(self, width, height, difficulty):
-        super().__init__(width, height)
+        super().__init__(width, height, [0,0,0,0])
         self._difficulty = difficulty
         self._hit = None
         self._directions = [[0,-1], [1,0], [0,1], [-1,0]]

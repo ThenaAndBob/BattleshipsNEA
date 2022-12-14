@@ -13,12 +13,16 @@ t : play with the Terminal""")
 
 
 if __name__ == "__main__":
-    if argv[1] == 'g':
-        ui = GUI()
-        ui.run()
-    elif argv[1] == 't':
+    try:
+        if argv[1] == 'g':
+            ui = GUI()
+            ui.run()
+        elif argv[1] == 't':
+            ui = Terminal()
+            ui.run()
+        else:
+            print("Run using t or g option")
+            usage()
+    except:
         ui = Terminal()
         ui.run()
-    else:
-        print("Run using t or g option")
-        usage()

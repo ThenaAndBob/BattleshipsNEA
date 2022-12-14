@@ -349,20 +349,23 @@ class Terminal(UI):
         self.__mainMenu()
     
     def __mainMenu(self):
-        print(text2art("Battleships"))
-        print("Main Menu:")
-        print("1. Log in")
-        print("2. Sign up")
-        print("3. Guest")
-        print("4. Quit")
+        while True:
+            print(text2art("Battleships"))
+            print("Main Menu:")
+            print("1. Log in")
+            print("2. Sign up")
+            print("3. Guest")
+            print("4. Quit")
 
-        opt = input()
-        if opt == "1":
-            self.__logIn()
-        elif opt == "2":
-            self.__signUp()
-        elif opt == "3":
-            self.__playMenu()
+            opt = input()
+            if opt == "1":
+                self.__logIn()
+            elif opt == "2":
+                self.__signUp()
+            elif opt == "3":
+                self.__playMenu()
+            else:
+                break
 
     def __signUp(self):
         valid = "not_unique"
@@ -389,77 +392,94 @@ class Terminal(UI):
         self.__playMenu()
 
     def __playMenu(self):
-        print(text2art("Battleships"))
-        print("1. Local")
-        print("2. Network")
-        print("3. AI Opponent")
-        print("4. Help")
-        print("5. Options")
-        print("6. Quit")
-        opt = input()
-        if opt == "1":
-            self.__local(0) # No ai
-        elif opt == "2":
-            self.__network()
-        elif opt == "3":
-            self.__local(input("What AI difficulty? 1,2 or 3"))
-        elif opt == "4":
-            self.__help()
+        while True:
+            print(text2art("Battleships"))
+            print("1. Local")
+            print("2. Network")
+            print("3. AI Opponent")
+            print("4. Help")
+            print("5. Options")
+            print("6. Quit")
+            opt = input()
+            if opt == "1":
+                self.__local(0) # No ai
+            elif opt == "2":
+                self.__network()
+            elif opt == "3":
+                self.__local(input("What AI difficulty? 1,2 or 3"))
+            elif opt == "4":
+                self.__help()
+            elif opt == "5":
+                self.__options()
+            else:
+                break
    
-    def __getShipInput(self, x, ai, y): # x = player number, ai = ai difficulty, y = index of ship to be placed
+    def __getShipInput(self, playerNumber, ai, y): # x = player number, ai = ai difficulty, y = index of ship to be placed
         if int(ai) != 0:
-            if x == 1:
+            if playerNumber == 1:
                 return self._game.getAIShip(y)
         return input((f"Ship in format xyrh"))
 
-    def __getAttackInput(self, x, ai): # x = player number, ai = ai difficulty
+    def __getAttackInput(self, playerNumber, ai): # x = player number, ai = ai difficulty
         if int(ai) != 0:
-            if x == 1:
-                return self._game.getAIAttack()
-        return input("Input square to attack (xy), can't attack the same square twice.")
-
+            if playerNumber == 1:
+                return self._game.getAIAttack(), 0
+        print("Your specials: [barrageCount, radarCount]")
+        print(self._game.getSpecialCount(playerNumber)[:-2]) # Don't care about mines or hitstreak
+        print("0 - normal, 1 - barrage, 2 - radar")
+        attackType = int(input("What attack do you want to use?"))
+        return input("Input square to attack (xy), can't attack the same square twice."), attackType
 
     def __local(self,aiDifficulty): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
         Game.changeAI(aiDifficulty)
         print("AI difficulty:", aiDifficulty)
         self._game = Game()
-        for x in range(2):
-            print(f"Player {x+1} turn")
-            pp(self._game.getBoard(x))
-            y = Game.getNumShips()
-            while y > 0:
-                if self._game.addShip(x, self.__getShipInput(x,aiDifficulty, y-1)) == -1:
+
+        for playerNum in range(2): # Placing ships.
+            print(f"Player {playerNum+1} turn")
+            pp(self._game.getBoard(playerNum))
+
+            numShips = Game.getNumShips()
+
+            while numShips > 0:
+                if self._game.addShip(playerNum, self.__getShipInput(playerNum, aiDifficulty, numShips-1)) == -1:
                     print("Invalid ship position, current state of board:")
-                    pp(self._game.getBoard(x))
-                    y += 1
-                y -= 1
-            pp(self._game.getBoard(x))
+                    pp(self._game.getBoard(playerNum))
+                    numShips += 1
+                numShips -= 1
+
+            pp(self._game.getBoard(playerNum))
+
             input("Press enter to change turns and clear terminal")
             os.system('cls')
 
         print("Time to attack!")
         play = True
         while play:
-            for x in range(2):
-                print(f"Player {x+1} turn")
-                print(f"Player {x+1} board:")
-                pp(self._game.getBoard(x))
+            for playerNum in range(2):
+                print(f"Player {playerNum+1} turn")
+                print(f"Player {playerNum+1} board:")
+                pp(self._game.getBoard(playerNum))
 
-                print(f"Player {((x+1)%2)+1} secret board:")
-                for y in self._game.getSBoard((x+1)%2): # it returns a 2d array, so we print the rows.
-                    print(y)
+                print(f"Player {((playerNum+1)%2)+1} secret board:")
+                for row in self._game.getSBoard((playerNum+1)%2): # it returns a 2d array, so we print the rows.
+                    print(row)
 
                 result = -2
                 while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
-                    attack = self.__getAttackInput(x, aiDifficulty)
+                    attackLocation, attackType = self.__getAttackInput(playerNum, aiDifficulty)
                     result = -2
-                    try:
-                        result = self._game.attack(int(attack[0]), int(attack[1]), (x+1)%2) # Index starts at 0
-                    except IndexError:
-                        print("Invalid attack format")
+                    if attackType == 2:
+                        result = self._game.radar((playerNum+1)%2)
+                        print(f"There is a ship at x={result[0]}, y={result[1]}")
+                    else:
+                        try:
+                            result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), (playerNum+1)%2, attackType) # Index starts at 0
+                        except IndexError:
+                            print("Invalid attack format")
                 if result == 2:
                     print("Hit!")
-                    print(f"Player {x+1} wins!")
+                    print(f"Player {playerNum+1} wins!")
                     play = False
                 elif result == 1:
                     print("Hit!")
@@ -472,10 +492,57 @@ class Terminal(UI):
     def __network(self):
         pass
 
-    def __help():
+    def __help(self):
         print("Advice")
 
-    def __options():
-        pass
+    def __options(self):
+        while True:
+            ships = Game.getShips()
+            width = Game.getWidth()
+            height = Game.getHeight()
+            numShips = [0,0,0,0,0,0]
+            for ship in ships:
+                numShips[ship-1] += 1
+            specialsCounts = Game.getSpecials()
+
+            print("-----Options Menu-----")
+            print(f"1. Grid Width {width}")
+            print(f"2. Grid Height {height}")
+            print(f"3. Ship One {numShips[0]}")
+            print(f"4. Ship Two {numShips[1]}")
+            print(f"5. Ship Three {numShips[2]}")
+            print(f"6. Ship Four {numShips[3]}")
+            print(f"7. Ship Five {numShips[4]}")
+            print(f"8. Ship Six {numShips[5]}")
+
+            print("-----Special Mode-----")
+            print(f"9. Barrage {specialsCounts[0]}")
+            print(f"10. Radar {specialsCounts[1]}")
+            print(f"11. Mines {specialsCounts[2]}")
+            print(f"12. Hit Streak {specialsCounts[3]}")
+            print("")
+            print("Write the number of the thing you want to change, followed by what it should be changed to. (e.g. 11 -1)")
+            print("Write 'E' to exit")
+            inp = input()
+            toChange = inp.split(" ")[0]
+            if toChange == "E":
+                return
+
+            newNum = inp.split(" ")[1]
+            if newNum.isnumeric():
+                newNum = int(newNum)
+            else:
+                newNum = bool(newNum)
+
+            if toChange == "1":
+                Game.changeBoardDimensions(newNum, height)
+            elif toChange == "2":
+                Game.changeBoardDimensions(width, newNum)
+            elif 3 <= int(toChange) <= 8:
+                Game.changeShips(int(toChange) - 3, newNum)
+            elif 9 <= int(toChange) <= 12:
+                Game.changeSpecials(int(toChange)-9, newNum)
+
+
 
 
