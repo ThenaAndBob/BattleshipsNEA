@@ -14,37 +14,34 @@ class Game():
     def __init__(self):
         self._players = Game.players
 
-    def radar(self, playerID):
-        board = self._players[playerID].getBoard()
-        self._players[(playerID+1)%2].decrementSpecial(1)
+    def radar(self, playerNum):
+        board = self._players[playerNum].getBoard()
+        self._players[(playerNum+1)%2].decrementSpecial(1)
         for y, row in enumerate(board):
             for x, value in enumerate(row):
                 if value == 1:
                     return [x,y]
 
-    def attack(self,x,y,playerID, attackType): # Playerd ID = 0 or 1, the player being attacked
+    def attack(self,x,y,playerNum, attackType): # Playerd ID = 0 or 1, the player being attacked
         if attackType == 0:
-            result = self._players[playerID].attack(x,y) # index starts at 0 
-            if isinstance(self._players[(playerID +1)%2], AI):
-                self._players[(playerID +1)%2].hitFeedback(result, int(x),int(y))
+            result = self._players[playerNum].attack(x,y) # index starts at 0 
+            if isinstance(self._players[(playerNum +1)%2], AI):
+                self._players[(playerNum +1)%2].hitFeedback(result, int(x),int(y))
             return result
         else:
-            specialCount = self._players[(playerID+1)%2].getSpecials()
+            specialCount = self._players[(playerNum+1)%2].getSpecials()
             if specialCount[attackType-1] == 0:
                 return -2
-            self._players[(playerID+1)%2].decrementSpecial(attackType-1)
+            self._players[(playerNum+1)%2].decrementSpecial(attackType-1)
             for yCoordinate in range(-1,2):
                 for xCoordinate in range(-1,2):
-                    result = self._players[playerID].attack(x + xCoordinate, y + yCoordinate)
+                    result = self._players[playerNum].attack(x + xCoordinate, y + yCoordinate)
                     if result == 2:
                         return result
             
-    def getSpecialCount(self, playerId):
-        return self._players[playerId].getSpecials()
-
-    def getPlayer(self, playerID):
-        return self._players[playerID]
-        
+    def getSpecialCount(self, playerNum):
+        return self._players[playerNum].getSpecials()
+     
     def addShip(self, pNum, ship):
         return self._players[pNum].addShip(ship)
 

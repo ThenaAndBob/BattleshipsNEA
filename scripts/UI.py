@@ -32,7 +32,19 @@ class UI():
         raise NotImplementedError
 
     @abstractclassmethod
+    def __options():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __networkGame():
+        raise NotImplementedError
+
+    @abstractclassmethod
     def __help():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __load():
         raise NotImplementedError
 
     def hash(self, password):
@@ -145,7 +157,6 @@ class GUI(UI):
         shipLoc = [[[0, 0] for _ in range(len(shipAttach))], [[0,0] for _ in range(len(shipAttach))]] # Stores the top and left coordinates of ships.
         for x in range(len(shipImages)):
             rects.append(shipImages[x].get_rect())
-            #scale these correctly, each square is 40*40 pixels.
 
         # Buttons
         buttonImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png")]
@@ -157,7 +168,8 @@ class GUI(UI):
         # Grid
         WidthInSquares = 10 # Dimensions of the grid in squares.
         HeightInSquares = 10 
-        squareSize = self._height//(HeightInSquares+1) # +1 to give a little bit of space.
+        squareSize = round(self._scale*2.5) 
+        print(squareSize)
         # Edges of the grid
         left = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
         right = self._width//2 + 5*squareSize

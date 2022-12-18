@@ -1,0 +1,2 @@
+ship size = 2.5h*2.5
+where h = size of ship. so a 1 by 1 ship is 2.5*2.5 pixels in base form.

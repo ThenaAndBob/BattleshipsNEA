@@ -28,9 +28,6 @@ class Board():
         if self._grid[y][x] == -1:
             return -2
 
-    def getShipHP(self): # returns total ship HP
-        return self._shipHP
-
     def addShip(self, ship): # string of 4 numbers
         try:
             if ship[2] == "1":

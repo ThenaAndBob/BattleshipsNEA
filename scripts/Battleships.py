@@ -24,5 +24,5 @@ if __name__ == "__main__":
             print("Run using t or g option")
             usage()
     except:
-        ui = Terminal()
+        ui = GUI()
         ui.run()
