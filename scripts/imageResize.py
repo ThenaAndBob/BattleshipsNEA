@@ -5,17 +5,18 @@ import matplotlib.pyplot as plt
 #Read image
 ogScale = 2
 scaleIncrease = 10
-fromRelativePath = "SourceImages\IdeaImages\MainMenu"
+fromRelativePath = "SourceImages"
 toRelativePath = "FinalImages\Scale"
 ogimg=[
-        Image.open(f'{fromRelativePath}\GuestButton{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\LoginButton{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\mainMenu{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\QuitButton{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\SignUpButton{ogScale}.png')
+        Image.open(f'{fromRelativePath}\HP1Ship{ogScale}.png'), 
+        Image.open(f'{fromRelativePath}\HP2Ship{ogScale}.png'), 
+        Image.open(f'{fromRelativePath}\HP3Ship{ogScale}.png'), 
+        Image.open(f'{fromRelativePath}\HP4Ship{ogScale}.png'), 
+        Image.open(f'{fromRelativePath}\HP5Ship{ogScale}.png'),
+        Image.open(f'{fromRelativePath}\HP6Ship{ogScale}.png')
        ]
 
-finNames = ["GuestButton", "LoginButton", "MainMenu", "QuitButton", "SignUpButton"]
+finNames = ["HP1Ship","HP2Ship","HP3Ship","HP4Ship","HP5Ship","HP6Ship"]
 
 
 for x in range(len(ogimg)):

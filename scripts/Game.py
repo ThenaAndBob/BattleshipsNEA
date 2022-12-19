@@ -52,7 +52,12 @@ class Game():
         return self._players[pNum].getSBoard()
 
     def getAIShip(self, shipIndex):
-        return self._players[1].getShipPlacement(Game.ships[shipIndex])
+        try:
+            return self._players[1].getShipPlacement(Game.ships[shipIndex])
+        except Exception as e:
+            print(self._players)
+            print(shipIndex)
+            input(e)
 
     def getAIAttack(self):
         print(self._players[0].getShips())

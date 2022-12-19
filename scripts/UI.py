@@ -147,14 +147,15 @@ class GUI(UI):
         screen = pg.display.set_mode((self._width, self._height))
         running = True
         currentPlayer = 0
+        numships = 4 # change this to a get on the Game class.
 
         # Ships
         rects = []
-        shipAttach = [0, 0, 0]
-        shipImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png")] 
-        shipHP = [2, 2, 2, 2]
-        shipRotation = [0, 0, 0]
-        shipLoc = [[[0, 0] for _ in range(len(shipAttach))], [[0,0] for _ in range(len(shipAttach))]] # Stores the top and left coordinates of ships.
+        shipAttach = [0 for _ in range(numships)]
+        shipImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP3Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP4Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP5Ship.png")] 
+        shipHP = [2,3,4,5]
+        shipRotation = [0 for _ in range(numships)]
+        shipLoc = [[(0, 0) for _ in range(numships)], [(0, 0) for _ in range(numships)]] # Stores the top and left coordinates of ships.
         for x in range(len(shipImages)):
             rects.append(shipImages[x].get_rect())
 
@@ -198,8 +199,14 @@ class GUI(UI):
                                 shipImages[x] = pg.transform.rotate(shipImages[x], -90)
                                 rects[x] = shipImages[x].get_rect()
                                 break
-                    if event.key == pg.K_o:
+                    elif event.key == pg.K_o:
                         running = False # To skip to attacking for debugging. delete later
+                    elif event.key == pg.K_d:
+                        print(f"ShipAttach: {shipAttach}")
+                        print(f"ShipHP: {shipHP}")
+                        print(f"ShipImages: {shipImages}")
+                        print(f"ShipLoc: {shipLoc}")
+                        print(f"ShipRotation: {shipRotation}")
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1 and 1 not in shipAttach:
                         point = pg.mouse.get_pos()
@@ -209,6 +216,11 @@ class GUI(UI):
                                 self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                 shipLoc[currentPlayer][x] = [rects[x].left, rects[x].top]
                                 rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil
+                                print(f"ShipAttach: {shipAttach}")
+                                print(f"ShipHP: {shipHP}")
+                                print(f"ShipImages: {shipImages}")
+                                print(f"ShipLoc: {shipLoc}")
+                                print(f"ShipRotation: {shipRotation}")
                             if currentPlayer == 0:
                                 currentPlayer = 1
                             else:
@@ -233,7 +245,7 @@ class GUI(UI):
                                 
                                 break
 
-            screen.fill((0,0,0))
+            screen.fill((0,0,60))
             for x in range(len(shipAttach)):  # Makes a ship follow the mouse around once it has been clicked.
                 if shipAttach[x] == 1:
                     rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)

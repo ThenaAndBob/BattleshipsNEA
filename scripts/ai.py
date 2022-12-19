@@ -58,7 +58,10 @@ class AI(Player):
             return [x,y]
 
     def getShipPlacement(self, shipLength):
-        return f"{random.randrange(0, self._bWidth)}{random.randrange(0, self._bHeight)}{random.randrange(0, 2)}{shipLength}"
+        board = self._board.getBoard()
+        width = len(board[0])
+        height = len(board)
+        return f"{random.randrange(0, width)}{random.randrange(0, height)}{random.randrange(0, 2)}{shipLength}"
 
     def hitFeedback(self,result, x,y):
         if self._hit is None and result == 1:

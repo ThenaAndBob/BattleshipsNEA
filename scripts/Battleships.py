@@ -3,6 +3,7 @@ from sys import argv
 
 #python scripts\Battleships.py t
 #python scripts\Battleships.py g
+#001, 550, 111, 570
 
 def usage():   
     print(f"""
@@ -13,16 +14,12 @@ t : play with the Terminal""")
 
 
 if __name__ == "__main__":
-    try:
-        if argv[1] == 'g':
-            ui = GUI()
-            ui.run()
-        elif argv[1] == 't':
-            ui = Terminal()
-            ui.run()
-        else:
-            print("Run using t or g option")
-            usage()
-    except:
+    if argv[1] == 'g':
         ui = GUI()
         ui.run()
+    elif argv[1] == 't':
+        ui = Terminal()
+        ui.run()
+    else:
+        print("Run using t or g option")
+        usage()
