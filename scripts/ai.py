@@ -7,7 +7,7 @@ class AI(Player):
         super().__init__(width, height, [0,0,0,0])
         self._difficulty = difficulty
         self._hit = None
-        self._directions = [[0,-1], [1,0], [0,1], [-1,0]]
+        self._directions = [(0,-1), (1,0), (0,1), (-1,0)]
         self._sides = 0
 
     def __validDirections(self, board, shipLength, xCoordinate, yCoordinate):
