@@ -1,0 +1,10 @@
+a = [False, True, False, True, False, True, False, True, True, True, True, True, True, True, False, True, True, False, True, True, True, False, True, False, False, False, False, 
+False, False, False, False, True, True, True, False, False, False, False, True, True, False, True, True, False, True, False, False, False, True, True, False, False, True, True, False, True, True, True, False, False, False, True, False, True, False, True, False, False, False, True, False, False, True, True, False, True, True, False, True, True, False, True, True, True, True, True, True, False, True, False, False, False, True, True, False, False, False, True, False, False, True, False, True, True, True, False, False, True, False, True, True, True, True, True, False, True, True, True, False, False, False, True, True, True, True, False, True, False, False, False, False, False, True, True, True, True, False, True, True, False, True, False, True, True, False, False, False, False, False, True]
+b = [False, True, False, True, False, True, False, True, True, True, True, True, True, True, False, True, True, False, True, True, True, False, True, False, False, False, False, False, False, False, False, True, True, True, False, False, False, False, True, True, False, True, True, False, True, False, False, False, True, True, False, False, True, True, False, True, True, True, False, False, False, True, False, True, False, True, False, False, False, True, False, False, True, True, False, True, True, False, True, True, False, True, True, True, True, True, True, False, True, False, False, False, True, True, False, False, False, True, 
+False, False, True, False, True, True, True, False, False, True, False, True, True, True, True, True, False, True, True, True, False, False, False, True, True, True, True, False, True, False, False, False, False, False, True, True, True, True, False, True, True, False, True, False, True, True, False, False, False, False, False, True]
+
+count = 0
+for aitem, bitem in zip(a,b):
+    if aitem != bitem:
+        print(count)
+    count += 1
