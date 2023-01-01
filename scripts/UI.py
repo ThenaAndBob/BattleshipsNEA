@@ -5,13 +5,14 @@ import os
 import pygame as pg
 from art import *
 from network import Network
+import math
 
 class UI():
     def __init__(self):
         self._game = Game()
+        self._username = "Guest" # This might be a problem.
         try:
-            #self._network = Network()
-            pass
+            self._network = Network()
         except:
             print("Could not connect to server")
 
@@ -48,7 +49,28 @@ class UI():
         raise NotImplementedError
 
     def hash(self, password):
+        # Normal character ord() values are between 33 and 126 inclusive
         return password
+        length = 100
+        if len(password) >= length:
+            return None
+
+        for _ in range(math.ceil(math.log2(length//len(password)))):
+            prev = ord(password[0]) ^ ord(password[-1])
+            new = chr(prev)
+            for _ in range(20):
+                for ch in password[1:]:
+                    ch = ((((ord(ch) ** 7) % 100000)^prev)%93)+33
+                    while ch == 92:
+                        ch = ((((ch ** 7) % 100000)^prev)%93)+33
+                    new += chr(((ch^prev) % 93) + 33)
+                    prev = (ch % 93) + 33
+                password = new
+                new = chr(prev)
+            password += password
+        print("DEBUG -- hash complete")
+        return password
+
 
 class GUI(UI):
     def __init__(self):
@@ -368,8 +390,18 @@ class GUI(UI):
 class Terminal(UI):
     def __init__(self):
         super().__init__()
-
+        
     def run(self):
+        with open("options.txt", "r") as f:
+            data = f.readline().split(",")
+        print(data)
+        data = list(map(int, data))
+        Game.changeBoardDimensions(data[0], data[1])
+        for index, numShips in enumerate(data[2:8]):
+            Game.changeShips(index, numShips)
+        for index, special in enumerate(data[8:12]):
+            Game.changeSpecials(index, special)
+        Game.changeNumPlayers(data[12])
         self.__mainMenu()
     
     def __mainMenu(self):
@@ -395,12 +427,12 @@ class Terminal(UI):
         valid = "not_unique"
         while valid == "not_unique":
             print("--The username must be unique--")
-            username = input("Username - ")
+            self._username = input("Username - ")
             password = input("Password - ")
-            if " " in username or " " in password:
+            if " " in self._username or " " in password:
                 print("Username or password cannot have spaces!")
             else:
-                valid = self._network.send(f"signUp {username} {self.hash(password)}")
+                valid = self._network.send(f"signUp {self._username} {self.hash(password + self._username)}")
             print("")
             
         self.__playMenu()
@@ -408,10 +440,10 @@ class Terminal(UI):
     def __logIn(self):
         valid = "false"
         while valid == "false":
-            username = input("Username - ")
+            self._username = input("Username - ")
             password = input("Password - ")
             print("")
-            valid = self._network.send(f"login {username} {self.hash(password)}")
+            valid = self._network.send(f"login {self._username} {self.hash(password + self._username)}")
         
         self.__playMenu()
 
@@ -429,7 +461,7 @@ class Terminal(UI):
             if opt == "1":
                 self.__local(0) # No ai
             elif opt == "2":
-                self.__network()
+                self.__networkGame()
             elif opt == "3":
                 self.__local(input("What AI difficulty? 1,2 or 3"))
             elif opt == "4":
@@ -456,38 +488,43 @@ class Terminal(UI):
         print("0 - normal, 1 - barrage, 2 - radar")
         attackType = int(input("What attack do you want to use?"))
         if attackType <= 1:
-            return input("Input square to attack (xy), can't attack the same square twice."), attackType
+            coordinates = input("Input square to attack (x,y), can't attack the same square twice.").split(",")
+            return coordinates, attackType
         return 0, attackType
 
-    def __local(self,aiDifficulty): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
+    def __local(self,aiDifficulty, game=[Game(), True]): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
         Game.changeAI(aiDifficulty)
         print("AI difficulty:", aiDifficulty)
-        self._game = Game()
+        self._game = game[0]
         numPlayers = Game.getNumPlayers()
 
-        for playerNum in range(numPlayers): # Placing ships.
-            print(f"Player {playerNum+1} turn")
-            pp(self._game.getBoard(playerNum))
+        if game[1]:
+            for playerNum in range(numPlayers): # Placing ships.
+                print(f"Player {playerNum+1} turn")
+                pp(self._game.getBoard(playerNum))
 
-            numShips = Game.getNumShips()
-            ships = Game.getShips()
+                numShips = Game.getNumShips()
+                ships = Game.getShips()
 
-            for ship in ships:
-                print(f"Player {playerNum+1} to place down ship of length {ship}")
-                while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, aiDifficulty, numShips-1)}{ship}") == -1:
-                    print("Invalid ship position, current state of board:")
-                    pp(self._game.getBoard(playerNum))
-                    numShips += 1
-                numShips -= 1
+                for ship in ships:
+                    print(f"Player {playerNum+1} to place down ship of length {ship}")
+                    while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, aiDifficulty, numShips-1)}{ship}") == -1:
+                        print("Invalid ship position, current state of board:")
+                        pp(self._game.getBoard(playerNum))
+                    numShips -= 1
 
-            pp(self._game.getBoard(playerNum))
+                pp(self._game.getBoard(playerNum))
 
-            input("Press enter to change turns and clear terminal")
-            os.system('cls')
+                input("Press enter to change turns and clear terminal")
+                os.system('cls')
 
-        print("Time to attack!")
+            print("Time to attack!")
         play = True
         while play:
+            choice = input("Write 's' to save, anything else to continue")
+            if choice.lower() == "s":
+                self.__save()
+                break
             for playerNum in range(numPlayers):
                 print(f"Player {playerNum+1} turn")
                 print(f"Player {playerNum+1} board:")
@@ -522,13 +559,82 @@ class Terminal(UI):
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
 
-    def __network(self):
-        pass
+    def __networkGame(self):
+        text2art("Online")
+        enemyName = input("What is your enemies username?")
+        print("Setting up game with opponent...")
+        playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+        playerNum = int(playerNum[1]) - 1
+
+        pp(self._game.getBoard(playerNum))
+
+        numShips = Game.getNumShips()
+        ships = Game.getShips()
+
+        for ship in ships:
+            print(f"Place down a ship of length {ship}")
+            while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
+                print("Invalid ship position, current state of board:")
+                pp(self._game.getBoard(playerNum))
+                numShips += 1
+            numShips -= 1
+
+        board = self._game.getBoard(playerNum)
+        grid = ""
+        for y, row in enumerate(board):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid += f"{x},{y}|"
+
+        grid = grid[:-1]
+        self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
+        enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
+        for coordinate in enemyGrid:
+            x,y = coordinate.split(",")
+            self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
+        
+        # Ships have been placed
+        # Start attacking:
+
+        play = True
+        while play:
+            print("Your board:")
+            pp(self._game.getBoard(playerNum))
+            print("")
+            print("Enemy secret board")
+            pp(self._game.getSBoard((playerNum+1)%2))
+            result = -2
+            while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
+                attackLocation, attackType = self.__getAttackInput(playerNum, 0)
+                result = -2
+                if attackType == 2:
+                    result = self._game.radar((playerNum+1) % 2)
+                    print(f"There is a ship at x={result[0]}, y={result[1]}")
+                else:
+                    try:
+                        result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), (playerNum+1) % 2, attackType) # Index starts at 0
+                    except IndexError:
+                        print("Invalid attack format")
+            if result == 2:
+                print("Hit!")
+                print(f"Player {playerNum+1} wins!")
+                play = False
+                self._network.send(f"won {playerNum}")
+            elif result == 1:
+                print("Hit!")
+            elif result == -1:
+                print("Miss!")
+            
+            previousAttack = self._network.send(f"updatePreviousAttack {attackLocation[0]} {attackLocation[1]} {playerNum} {attackType} {gameID}")
+            print("Enemy player attacked - ", previousAttack)
+            x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
+            self._game.attack(x, y, playerNum, attackType)
 
     def __help(self):
         print("Advice")
 
     def __options(self):
+        changed = {}
         while True:
             ships = Game.getShips()
             width = Game.getWidth()
@@ -561,13 +667,13 @@ class Terminal(UI):
             inp = input()
             toChange = inp.split(" ")[0]
             if toChange == "E":
-                return
-
+                break
             newNum = inp.split(" ")[1]
             if newNum.isnumeric():
                 newNum = int(newNum)
             else:
-                newNum = bool(newNum)
+                continue
+            changed[int(toChange)-1] = newNum
 
             if toChange == "1":
                 Game.changeBoardDimensions(newNum, height)
@@ -581,9 +687,64 @@ class Terminal(UI):
                 if newNum > 1:
                     Game.changeNumPlayers(newNum)
                 else:
-                    print("Must be more than 2 or more players")
+                    print("Must be 2 or more players")
+
+        with open("options.txt", "r") as f:
+            data = f.readlines()
+        
+        for index, newValue in changed.items():
+            if index == 12:
+                data[index] = str(newValue)
+            else:
+                data[index] = f"{newValue}\n"
+
+        with open("options.txt", "w") as f:
+            f.writelines(data)
 
     def __load(self):
-        pass
+        if self._username is not None:
+            loads = self._network.send(f"getLoads {self._username}")
+        for load in loads.split(","):
+            print(load)
 
+        choice = input("Which game would you like to load?")
+        grids = self._network.send(f"loadGame {choice}")
+        grid1, grid2, ai = grids.split("||")
 
+        Game.changeAI(ai)
+        game = Game()
+
+        for coordinate in grid1.split(" "): 
+            x = coordinate.split(",")[0]
+            y = coordinate.split(",")[1]
+            game.addShip(0, f"{x}{y}{0}{1}")
+
+        for coordinate in grid2.split(" "):
+            x = coordinate.split(",")[0]
+            y = coordinate.split(",")[1]
+            game.addShip(1, f"{x}{y}{0}{1}")
+
+        self.__local(ai, [game, False])
+
+    def __save(self):
+        if self._username is None:
+            print("Must be logged in")
+            return
+        board1 = self._game.getBoard(0)
+        grid1 = ""
+        for y, row in enumerate(board1):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid1 += f"{x},{y} "
+        grid1 = grid1[:-1]
+
+        board2 = self._game.getBoard(1)
+        grid2 = ""
+        for y, row in enumerate(board2):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid2 += f"{x},{y} "
+        grid2 = grid2[:-1]
+
+        self._network.send(f"addGame {grid1} {grid2} {self._username} Guest")
+        

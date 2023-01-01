@@ -8,8 +8,11 @@ class Board():
         # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
 
     def attack(self,x,y): # Index starts at 0. 
-        if x < 0 or x >= self._width or y < 0 or y >= self._height:
-            return -2
+        try:
+            if x < 0 or x >= self._width or y < 0 or y >= self._height:
+                return -2
+        except TypeError as e:
+            print(e, x, y, "attack in board class")
         try:
             if self._grid[y][x] == 1: # if hit.
                 self._grid[y][x] = -1
@@ -39,7 +42,7 @@ class Board():
                     if self._grid[int(ship[1])][x] == 1:
                         return -1
         except IndexError as e:
-            print(e)
+            print(ship, e, "Board class, addShip.")
             return -1
 
         if ship[2] == "1":

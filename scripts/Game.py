@@ -3,10 +3,10 @@ from ai import AI
 
 class Game():
     ships = [2,3,4,5]
-    shipCounts = [0,1,1,1,0]
+    shipCounts = [0,1,1,1,1,0]
     width = 10
     height = 10
-    specialCounts = [0,0,0,False] # barrage, radar, mine, hitstreak
+    specialCounts = [0,0,0,0] # barrage, radar, mine, hitstreak
     numPlayers = 2
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
@@ -87,7 +87,11 @@ class Game():
     def changeShips(shipIndex, newNumShips):
         if newNumShips < 0:
             return -2
-        dif = newNumShips - Game.shipCounts[shipIndex]
+        try:
+            dif = newNumShips - Game.shipCounts[shipIndex]
+        except IndexError as e:
+            print(shipIndex, Game.shipCounts)
+            raise e
         if dif > 0:
             for _ in range(dif):
                 Game.ships.append(shipIndex+1)
@@ -96,6 +100,7 @@ class Game():
             for _ in range(-dif):
                 Game.ships.remove(shipIndex+1)
                 Game.shipCounts[shipIndex] -= 1
+        
 
     @staticmethod
     def changeSpecials(specialIndex, newNumSpecials):
@@ -117,7 +122,7 @@ class Game():
             print("No AI")
             Game.players = [Player(Game.width, Game.height, Game.specialCounts) for _ in range(Game.numPlayers)]
         else:
-            print("2 Players with AI")
+            print("Player vs AI 1v1")
             Game.players = [Player(Game.width, Game.height, Game.specialCounts), AI(Game.width, Game.height, ai)]
 
     @staticmethod
@@ -125,7 +130,7 @@ class Game():
         print("New board dimensions", newWidth, newHeight)
         Game.width = newWidth
         Game.height = newHeight
-        Game.players = [Player(newWidth, newHeight), Player(newWidth, newHeight)]
+        Game.players = [Player(newWidth, newHeight, Game.specialCounts), Player(newWidth, newHeight, Game.specialCounts)]
 
     @staticmethod
     def changeNumPlayers(newNumPlayers):

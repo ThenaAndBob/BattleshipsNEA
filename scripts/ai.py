@@ -28,22 +28,86 @@ class AI(Player):
             valid_directions += 1
         return valid_directions
 
-    def getAttack(self, ships, board):
-        if self._hit is None:
-            print("normal attacking")
-            probabiltyBoard = [[0 for _ in range(len(board))] for _ in range(len(board[0]))]
-            for ship in ships:
-                for yC in range(len(board)):
-                    for xC in range(len(board[yC])):
-                        probabiltyBoard[yC][xC] += self.__validDirections(board, ship, xC, yC)
+    def __isValid(self, direction, yC, xC, taken, shipLength, width, height):
+        if direction == 0 or direction == 2:
+            if direction == 0:
+                yC -= shipLength - 1
+            if yC < 0 or yC + shipLength - 1 >= height:
+                return False
+            for i in range(shipLength):
+                if [yC+i,xC] in taken:
+                    return False
+        elif direction == 1 or direction == 3:
+            if direction == 3:
+                xC -= shipLength - 1
+            if xC < 0 or xC + shipLength - 1 >= width:
+                return False
+            for i in range(shipLength):
+                if [yC,xC+i] in taken:
+                    return False
+        return True
 
-            maxValue = np.amax(probabiltyBoard)
-            for y, row in enumerate(probabiltyBoard):
+    def __chooseAttackSquare(self, probabilityBoard):
+        if self._difficulty >= 2:
+            maxValue = np.amax(probabilityBoard)
+            for y, row in enumerate(probabilityBoard):
                 for x, value in enumerate(row):
                     if value == maxValue:
                         print("AI attacked:",x,y)
                         return [x,y]
-            print("Something went wrong with AI attack subroutine")
+        elif self._difficulty == 1:
+            sumOfDirections = sum(sum(probabilityBoard, []))
+            toAttack = random.randint(0, sumOfDirections)
+            count = 0
+            for y, row in enumerate(probabilityBoard):
+                for x, value in enumerate(row):
+                    if count <= toAttack <= count + value:
+                        return [x,y]
+                    count += value
+                    
+        print("DEBUG - AI Attacking Problem")
+
+    def getAttack(self, ships, board):
+        if self._hit is None:
+            if self._difficulty < 3:
+                print("normal attacking")
+                probabilityBoard = [[0 for _ in range(len(board))] for _ in range(len(board[0]))]
+                for ship in ships:
+                    for yC in range(len(board)):
+                        for xC in range(len(board[yC])):
+                            probabilityBoard[yC][xC] += self.__validDirections(board, ship, xC, yC)
+            else:
+                sims = 100000
+                probabilityBoard = [[0 for _ in range(10)] for _ in range (10)]
+                taken = []
+                for yi, y, in enumerate(board):
+                    for xi, x in enumerate(y):
+                        if x != 0:
+                            taken.append([yi,xi])
+                
+                height = len(board)
+                width = len(board[0])
+                for _ in range(sims):
+                    tempTaken = taken.copy()
+                    for shipLength in ships:
+                        direction = random.randint(0,3)
+                        xC, yC = random.randrange(0,width), random.randrange(0,height)
+
+                        if self.__isValid(direction, yC, xC, tempTaken, shipLength, width, height):
+                            if direction == 0 or direction == 2:
+                                if direction == 0:
+                                    yC -= shipLength - 1
+                                    for i in range(shipLength):
+                                        probabilityBoard[yC+i][xC] += 1
+                                        tempTaken.append([yC+i, xC])
+                                        
+                            if direction == 1 or direction == 3:
+                                if direction == 3:
+                                    xC -= shipLength - 1
+                                for i in range(shipLength):
+                                    probabilityBoard[yC][xC+i] += 1
+                                    tempTaken.append([yC, xC+i])
+            return self.__chooseAttackSquare(probabilityBoard)
         else:
             print("ortogonal strat")
             x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
@@ -69,21 +133,14 @@ class AI(Player):
         elif self._hit is not None:
             if result == 1: # The orthogonal attack was a hit
                 self._hit[3] += 1
-            elif self._sides == 1: # it was a miss and we should turn around
+            elif self._sides == 1:
                 self._sides = 0 # The ship has been cleared out.
                 self._hit = None
             else: # it was a miss
-                if self._hit[3] > 1:
+                if self._hit[3] > 1: # We go to the other side of the ship/
                     self._hit[2] = (self._hit[2] + 2) % 4
                     self._hit[3] = 1
                     self._sides += 1
                 else:
-                    print("hit incremented")
-                    self._hit[2] += 1
-
-
-
-
-
-
-                    
+                    print("direction incremented")
+                    self._hit[2] += 1 # Rotate direction 90 degrees clockwise.
