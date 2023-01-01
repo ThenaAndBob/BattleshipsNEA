@@ -40,7 +40,7 @@ class Server():
 
                 elif dataType.lower() == "addgame": # Saving a game.
                     print("adding game")
-                    connection.send(str.encode(self.addGame(data[1], data[2], data[3], data[4])))
+                    connection.send(str.encode(str(self.addGame(data[1], data[2], data[3], data[4], data[5])))) # g1,g2,u1,u2,prevattack
 
                 elif dataType.lower() == "startgame": # Starting a network game
                     print(f"Starting game {data[1]} against {data[2]}")
@@ -113,23 +113,35 @@ class Server():
 
     def getLoads(self, username): # unsure about return formats
         sqlConnection = sqlite3.connect("battleships.db")
-        sqlStatement = f"SELECT GameID FROM Game WHERE username1 = '{username}'"
-        result = sqlConnection.execute(sqlStatement)
-        sqlStatement = f"SELECT GameID FROM Game WHERE username2 = '{username}'"
-        result.extend(sqlConnection.execute(sqlStatement))
+        sqlStatement = f"SELECT gameID FROM Game WHERE username1 = '{username}' OR username2 = '{username}'"
+        result = sqlConnection.execute(sqlStatement).fetchall()
+        print("Received game IDs - ", result)
         re = ""
-        for id in result[:-1]:
-            re += id
+        for gameid in result:
+            gameid = str(gameid[0])
+            print("Game id - ", gameid)
+            re += gameid
             re += ","
-        re += result[-1]
+        re = re[:-1]
 
         return re
 
     def loadGame(self, gameID): # unsure about return formats
         sqlConnection = sqlite3.connect("battleships.db")
-        sqlStatement = f"Select grid1, grid2 FROM Game WHERE GameID = {gameID}"
-        result = sqlConnection.execute(sqlStatement)
-        return result
+        sqlStatement = f"SELECT grid1, grid2 FROM Game WHERE gameID = '{gameID}'"
+        grids = sqlConnection.execute(sqlStatement).fetchone()
+        print("Received grids - ", grids)
+
+        sqlStatement = f"SELECT username2 FROM Game WHERE gameID = '{gameID}'"
+        username2 = sqlConnection.execute(sqlStatement).fetchone()[0]
+        if username2[:2] == "AI":
+            aiLevel = username2[3]
+        else:
+            aiLevel = "0"
+
+        print("Returning", f"{grids[0]} {grids[1]} {aiLevel}")
+        return f"{grids[0]} {grids[1]} {aiLevel}"
+
 
     def addGame(self, grid1, grid2, u1, u2, previousAttack):
         sqlConnection = sqlite3.connect("battleships.db")

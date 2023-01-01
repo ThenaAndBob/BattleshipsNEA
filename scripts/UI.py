@@ -709,19 +709,17 @@ class Terminal(UI):
 
         choice = input("Which game would you like to load?")
         grids = self._network.send(f"loadGame {choice}")
-        grid1, grid2, ai = grids.split("||")
+        grid1, grid2, ai = grids.split(" ")
 
         Game.changeAI(ai)
         game = Game()
 
-        for coordinate in grid1.split(" "): 
-            x = coordinate.split(",")[0]
-            y = coordinate.split(",")[1]
+        for coordinate in grid1.split("|"): 
+            x,y = coordinate.split(",")
             game.addShip(0, f"{x}{y}{0}{1}")
 
-        for coordinate in grid2.split(" "):
-            x = coordinate.split(",")[0]
-            y = coordinate.split(",")[1]
+        for coordinate in grid2.split("|"):
+            x,y = coordinate.split(",")
             game.addShip(1, f"{x}{y}{0}{1}")
 
         self.__local(ai, [game, False])
@@ -735,7 +733,7 @@ class Terminal(UI):
         for y, row in enumerate(board1):
             for x, value in enumerate(row):
                 if value == 1:
-                    grid1 += f"{x},{y} "
+                    grid1 += f"{x},{y}|"
         grid1 = grid1[:-1]
 
         board2 = self._game.getBoard(1)
@@ -743,8 +741,8 @@ class Terminal(UI):
         for y, row in enumerate(board2):
             for x, value in enumerate(row):
                 if value == 1:
-                    grid2 += f"{x},{y} "
+                    grid2 += f"{x},{y}|"
         grid2 = grid2[:-1]
 
-        self._network.send(f"addGame {grid1} {grid2} {self._username} Guest")
+        self._network.send(f'addGame {grid1} {grid2} {self._username} Guest ""')
         
