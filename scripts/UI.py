@@ -560,7 +560,7 @@ class Terminal(UI):
                 os.system('cls')
 
     def __networkGame(self):
-        text2art("Online")
+        print(text2art("Online"))
         enemyName = input("What is your enemies username?")
         print("Setting up game with opponent...")
         playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
@@ -631,7 +631,18 @@ class Terminal(UI):
             self._game.attack(x, y, playerNum, attackType)
 
     def __help(self):
-        print("Advice")
+        print("\n")
+        print(text2art("RULES"))
+        print("The game consists of consists of two phases, the preparation and attack phases.")
+        print("In the preperation phase, players place own all of their ships on a grid (often 10x10).")
+        print("---------------------------------------------------------------------------------------")
+        print("In the attack phase, it is time to attack the other players' ships")
+        print("Do this by choosing a square on the grid that you think contains an enemy ship")
+        print("You will be told whether your attack was a hit, then it changes to another players turn")
+        print("---------------------------------------------------------------------------------------")
+        print("This cycle continues until one player has destroyed all of the enemies ships.")
+        print("The last player with ships remaining wins!")
+        input("Press any button to continue.")
 
     def __options(self):
         changed = {}
