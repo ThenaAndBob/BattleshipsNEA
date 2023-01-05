@@ -1,11 +1,12 @@
 from abc import abstractclassmethod
+from cProfile import run
+from tkinter import E
 from Game import Game
 from pprint import pprint as pp
 import os
 import pygame as pg
 from art import *
 from network import Network
-import math
 
 class UI():
     def __init__(self):
@@ -48,28 +49,33 @@ class UI():
     def __load():
         raise NotImplementedError
 
-    def hash(self, password):
-        # Normal character ord() values are between 33 and 126 inclusive
-        return password
+    #########################################################################
+    #
+    # CATEGORY A SKILL: HASHING
+    # Using a hashing algorithm to securely transfer user passwords.
+    #
+    #########################################################################
+    def hash(toHash):
         length = 100
-        if len(password) >= length:
+        if len(toHash) >= length:
             return None
+        else:
+            while len(toHash)*2 <= 100:
+                toHash += toHash
+            toHash += toHash[:100-len(toHash)]
+            print(len(toHash))
 
-        for _ in range(math.ceil(math.log2(length//len(password)))):
-            prev = ord(password[0]) ^ ord(password[-1])
+        prev = ord(toHash[0]) ^ ord(toHash[-1])
+        new = chr(prev)
+        for _ in range(1000):
+            for ch in toHash[1:]:
+                ch = ((ord(ch)^prev)%26)+65
+                new += chr(((ch^prev) % 26) + 65)
+                prev = (ch % 26) + 65
+            toHash = new
             new = chr(prev)
-            for _ in range(20):
-                for ch in password[1:]:
-                    ch = ((((ord(ch) ** 7) % 100000)^prev)%93)+33
-                    while ch == 92:
-                        ch = ((((ch ** 7) % 100000)^prev)%93)+33
-                    new += chr(((ch^prev) % 93) + 33)
-                    prev = (ch % 93) + 33
-                password = new
-                new = chr(prev)
-            password += password
         print("DEBUG -- hash complete")
-        return password
+        return toHash
 
 
 class GUI(UI):
@@ -78,6 +84,7 @@ class GUI(UI):
         self._scale = 20
         self._width = 960
         self._height = 540
+        self._finalImagePath = f"FinalImages\Scale{self._scale}\ "[:-1]
 
     def run(self):
         self.__menu()
@@ -90,8 +97,8 @@ class GUI(UI):
 
         # Buttons
         rects = []
-        buttonImages = [pg.image.load(f"FinalImages\Scale{self._scale}\LoginButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\SignUpButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\GuestButton.png"), pg.image.load(f"FinalImages\Scale{self._scale}\QuitButton.png")] 
-        backgroundImage = pg.image.load(f"FinalImages\Scale{self._scale}\MainMenu.png") 
+        buttonImages = [pg.image.load(f"{self._finalImagePath}LoginButton.png"), pg.image.load(f"{self._finalImagePath}SignUpButton.png"), pg.image.load(f"{self._finalImagePath}GuestButton.png"), pg.image.load(f"{self._finalImagePath}QuitButton.png")] 
+        backgroundImage = pg.image.load(f"{self._finalImagePath}MainMenu.png") 
         for image in buttonImages:
             rects.append(image.get_rect())
         # Position buttons correctly.
@@ -114,7 +121,7 @@ class GUI(UI):
                                 elif i == 1:
                                     self.__signUp()
                                 elif i == 2:
-                                    self.__local()
+                                    self.__playMenu()
                                 else:
                                     running = False
 
@@ -132,8 +139,8 @@ class GUI(UI):
 
         # Buttons
         rects = []
-        buttonImages = [pg.image.load(f"FinImages\Play{self._scale}.png"), pg.image.load(f"FinImages\Help{self._scale}.png"), pg.image.load(f"FinImages\Quit{self._scale}.png")] 
-        backgroundImage = pg.image.load(f"FinImages\MenuBackGround{self._scale}.png") 
+        buttonImages = [pg.image.load(f"{self._finalImagePath}Play.png"), pg.image.load(f"{self._finalImagePath}Help.png"), pg.image.load(f"{self._finalImagePath}Quit.png")] 
+        backgroundImage = pg.image.load(f"{self._finalImagePath}MenuBackGround.png") 
         for x in range(len(buttonImages)):
             rects.append(buttonImages[x].get_rect())
             rects[x].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + x*int(round((110/540)*self._height)), rects[x].width, rects[x].height)
@@ -150,9 +157,18 @@ class GUI(UI):
                             if rect.collidepoint(point):
                                 pg.quit()
                                 if i == 0:
-                                    self.__local()
+                                    self.__local(False, 0)
                                 elif i == 1:
+                                    self.__local(True, 0)
+                                elif i == 2:
+                                    aiDifficulty = 2 #fix
+                                    self.__local(False, aiDifficulty)
+                                elif i == 3:
                                     self.__help()
+                                elif i == 4:
+                                    self.__options()
+                                elif i == 5:
+                                    self.__load()
                                 else:
                                     running = False
                                     pg.quit()
@@ -163,18 +179,27 @@ class GUI(UI):
 
             pg.display.update()
 
-    def __local(self):
+    def __local(self, network, ai, game=[Game(), True]): # Network is a boolean 
+        if network:
+            # Do the GUI version of this IMPORTANT FIX PROBLEM
+            print(text2art("Online"))
+            enemyName = input("What is your enemies username?")
+            print("Setting up game with opponent...")
+            playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+            playerNum = int(playerNum[1]) - 1
+            
         # Initialise
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         running = True
         currentPlayer = 0
         numships = 4 # change this to a get on the Game class.
+        self._game = game[0]
 
         # Ships
         rects = []
         shipAttach = [0 for _ in range(numships)]
-        shipImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP3Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP4Ship.png"), pg.image.load(f"FinalImages\Scale{self._scale}\HP5Ship.png")] 
+        shipImages = [pg.image.load(f"{self._finalImagePath}HP2Ship.png"), pg.image.load(f"{self._finalImagePath}HP3Ship.png"), pg.image.load(f"{self._finalImagePath}HP4Ship.png"), pg.image.load(f"{self._finalImagePath}HP5Ship.png")] 
         shipHP = [2,3,4,5]
         shipRotation = [0 for _ in range(numships)]
         shipLoc = [[(0, 0) for _ in range(numships)], [(0, 0) for _ in range(numships)]] # Stores the top and left coordinates of ships.
@@ -182,7 +207,7 @@ class GUI(UI):
             rects.append(shipImages[x].get_rect())
 
         # Buttons
-        buttonImages = [pg.image.load(f"FinalImages\Scale{self._scale}\HP2Ship.png")]
+        buttonImages = [pg.image.load(f"{self._finalImagePath}HP2Ship.png")]
         buttonRects = []
         for x in range(len(buttonImages)):
             buttonRects.append(buttonImages[x].get_rect())
@@ -205,83 +230,103 @@ class GUI(UI):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
 
         # Loop for placing ships
-        while running:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    running = False
-                    pg.quit()
-                elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_r: 
-                        for x in range(len(shipAttach)):
-                            if shipAttach[x] == 1:
-                                if shipRotation[x]:
-                                    shipRotation[x] = 0
+        if game[1]:
+            while running:
+                for event in pg.event.get():
+                    if event.type == pg.QUIT:
+                        running = False
+                        pg.quit()
+                    elif event.type == pg.KEYDOWN:
+                        if event.key == pg.K_r: 
+                            for x in range(len(shipAttach)):
+                                if shipAttach[x] == 1:
+                                    if shipRotation[x]:
+                                        shipRotation[x] = 0
+                                    else:
+                                        shipRotation[x] = 1
+                                    shipImages[x] = pg.transform.rotate(shipImages[x], -90)
+                                    rects[x] = shipImages[x].get_rect()
+                                    break
+                        elif event.key == pg.K_o:
+                            running = False # To skip to attacking for debugging. delete later
+                        elif event.key == pg.K_d:
+                            print(f"ShipAttach: {shipAttach}")
+                            print(f"ShipHP: {shipHP}")
+                            print(f"ShipImages: {shipImages}")
+                            print(f"ShipLoc: {shipLoc}")
+                            print(f"ShipRotation: {shipRotation}")
+                    elif event.type == pg.MOUSEBUTTONDOWN:
+                        if event.button == 1 and 1 not in shipAttach:
+                            point = pg.mouse.get_pos()
+                            if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
+                                # place down all ships and swap turns (and move ships back) or move on to actual game.
+                                for x in range(len(rects)):
+                                    self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                    shipLoc[currentPlayer][x] = [rects[x].left, rects[x].top]
+                                    rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil IMPORTANT FIX PROBLEM
+                                    print(f"ShipAttach: {shipAttach}") # IMPORTANT FIX PROBLEM
+                                    print(f"ShipHP: {shipHP}")
+                                    print(f"ShipImages: {shipImages}")
+                                    print(f"ShipLoc: {shipLoc}")
+                                    print(f"ShipRotation: {shipRotation}")
+                                if currentPlayer == 0:
+                                    currentPlayer = 1
+                                    if ai != 0:
+                                        for health in shipHP:
+                                            self._game.addShip(1,self._game.getAIShip(health-2)) # health-2 = shipIndex
+                                        running = False
                                 else:
-                                    shipRotation[x] = 1
-                                shipImages[x] = pg.transform.rotate(shipImages[x], -90)
-                                rects[x] = shipImages[x].get_rect()
-                                break
-                    elif event.key == pg.K_o:
-                        running = False # To skip to attacking for debugging. delete later
-                    elif event.key == pg.K_d:
-                        print(f"ShipAttach: {shipAttach}")
-                        print(f"ShipHP: {shipHP}")
-                        print(f"ShipImages: {shipImages}")
-                        print(f"ShipLoc: {shipLoc}")
-                        print(f"ShipRotation: {shipRotation}")
-                elif event.type == pg.MOUSEBUTTONDOWN:
-                    if event.button == 1 and 1 not in shipAttach:
-                        point = pg.mouse.get_pos()
-                        if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
-                            # place down all ships and swap turns (and move ships back) or move on to actual game.
-                            for x in range(len(rects)):
-                                self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
-                                shipLoc[currentPlayer][x] = [rects[x].left, rects[x].top]
-                                rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil
-                                print(f"ShipAttach: {shipAttach}")
-                                print(f"ShipHP: {shipHP}")
-                                print(f"ShipImages: {shipImages}")
-                                print(f"ShipLoc: {shipLoc}")
-                                print(f"ShipRotation: {shipRotation}")
-                            if currentPlayer == 0:
-                                currentPlayer = 1
-                            else:
-                                running = False
-                            
-                        for x in range(len(rects)):
-                            if rects[x].collidepoint(point): # Checks if the mouse is inside one of the ships.
-                                # Mouse attaches to ship and starts moving it around.
-                                shipAttach[x] = 1
-                                break  # Break cause otherwise you can pick up multiple ships at once.
-                elif event.type == pg.MOUSEBUTTONUP:
-                    if event.button == 1 and 1 in shipAttach:
-                        point = pg.mouse.get_pos()
-                        for x in range(len(shipAttach)):
-                            if shipAttach[x] == 1: # If the ship is currently being held, place it down.
-                                shipAttach[x] = 2
-
-                                if shipRotation[x]:
-                                    rects[x].update(squareSize * round((point[0] - (left % squareSize) - squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
-                                else:
-                                    rects[x].update(squareSize * round((point[0] - (left % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
+                                    running = False
                                 
-                                break
+                            for x in range(len(rects)):
+                                if rects[x].collidepoint(point): # Checks if the mouse is inside one of the ships.
+                                    # Mouse attaches to ship and starts moving it around.
+                                    shipAttach[x] = 1
+                                    break  # Break cause otherwise you can pick up multiple ships at once.
+                    elif event.type == pg.MOUSEBUTTONUP:
+                        if event.button == 1 and 1 in shipAttach:
+                            point = pg.mouse.get_pos()
+                            for x in range(len(shipAttach)):
+                                if shipAttach[x] == 1: # If the ship is currently being held, place it down.
+                                    shipAttach[x] = 2
 
-            screen.fill((0,0,60))
-            for x in range(len(shipAttach)):  # Makes a ship follow the mouse around once it has been clicked.
-                if shipAttach[x] == 1:
-                    rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
+                                    if shipRotation[x]:
+                                        rects[x].update(squareSize * round((point[0] - (left % squareSize) - squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - shipHP[x]*squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
+                                    else:
+                                        rects[x].update(squareSize * round((point[0] - (left % squareSize) -  shipHP[x]*squareSize/2)/squareSize) + (left % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize), rects[x].width, rects[x].height)
+                                    
+                                    break
 
-            for square in squares:
-                pg.draw.rect(screen, (255,255,255), square, 1)
+                screen.fill((0,0,60))
+                for x in range(len(shipAttach)):  # Makes a ship follow the mouse around once it has been clicked.
+                    if shipAttach[x] == 1:
+                        rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
 
-            for x in range (len(rects)):
-                screen.blit(shipImages[x], rects[x])
+                for square in squares:
+                    pg.draw.rect(screen, (255,255,255), square, 1)
 
-            for x in range(len(buttonImages)):
-                screen.blit(buttonImages[x], buttonRects[x])
+                for x in range (len(rects)):
+                    screen.blit(shipImages[x], rects[x])
 
-            pg.display.update()
+                for x in range(len(buttonImages)):
+                    screen.blit(buttonImages[x], buttonRects[x])
+
+                pg.display.update()
+
+            if network:
+                board = self._game.getBoard(playerNum)
+                grid = ""
+                for y, row in enumerate(board):
+                    for x, value in enumerate(row):
+                        if value == 1:
+                            grid += f"{x},{y}|"
+
+                grid = grid[:-1]
+                self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
+                enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
+                for coordinate in enemyGrid:
+                    x,y = coordinate.split(",")
+                    self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
 
 
         # Attacking starts:
@@ -312,6 +357,12 @@ class GUI(UI):
             for y in range(top, bot, squareSize):
                 enemySquares.append(pg.Rect(x,y,squareSize,squareSize))
 
+        attackTypePaths = [f"{self._finalImagePath}RegularAttack.png", f"{self._finalImagePath}Barrage.png", f"{self._finalImagePath}Radar.png"]
+        attackType = 0
+        attackTypeImage = pg.image.load(attackTypePaths[attackType])
+        attackTypeRect = attackTypeImage.get_rect()
+        attackTypeRect.update(1,1,1,1) # IMPORTANT PROBLEM FIX
+
         # Game loop   
         postHit = False         
         while running:
@@ -322,15 +373,29 @@ class GUI(UI):
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         postHit = False
+                    elif event.key == pg.K_s:
+                        self.__save() #IMPORTANT PROBLEM FIX -- Consider adding a check here, to make sure they want to save.
+                        running = False
+                    elif event.key == pg.K_c:
+                        if attackTypeRect.collidepoint(point): 
+                            # Change the attacktype
+                            attackType = (attackType+1)%3
+                            attackTypeImage = pg.image.load(attackTypePaths[attackType]) # IMPORTANT PROBLEM FIX
+                            attackTypeRect = attackTypeImage.get_rect()
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         point = pg.mouse.get_pos()
+                        if attackTypeRect.collidepoint(point): 
+                            # Change the attacktype
+                            attackType = (attackType+1)%3
+                            attackTypeImage = pg.image.load(attackTypePaths[attackType]) # IMPORTANT PROBLEM FIX
+                            attackTypeRect = attackTypeImage.get_rect()
                         for x in range(len(enemySquares)):
                             if enemySquares[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # attack that square and swap sides
                                 coords = [squareSize * round((point[0] - ((left + right//2 )% squareSize) - squareSize/2)/squareSize) + ((left + right//2) % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize)]
                                 coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
-                                result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1) % 2)
+                                result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1) % 2, attackType)
                                 if result == 2:
                                     print(f"Print {currentPlayer} won!")
                                     running = False
@@ -345,10 +410,20 @@ class GUI(UI):
                                     # error or already attacked ship
                                     currentPlayer = (currentPlayer + 1) % 2 # Because we dont want to currentPlayer to remain the same in 2 lines.
                                     postHit = False
+
+                                if network:
+                                    previousAttack = self._network.send(f"updatePreviousAttack {coordinput[0]} {coordinput[1]} {playerNum} {attackType} {gameID}")
+                                    print("Enemy player attacked - ", previousAttack) # IMPORTANT FIX PROBLEM 
+                                    x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
+                                    self._game.attack(x, y, playerNum, attackType)
+
                                 currentPlayer = (currentPlayer + 1) % 2
+                                if currentPlayer == 1 and ai != 0:
+                                    x,y = self._game.getAIAttack()
+                                    self._game.attack(x,y,0,0)
+                                    currentPlayer = (currentPlayer + 1) % 2
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
-
             screen.fill((0,0,0))
 
             if not postHit:
@@ -378,14 +453,189 @@ class GUI(UI):
                 pass
             pg.display.update()
 
-    def __help(self):
+    def addNewResolution(self, newScale):
+        scaleIncrease = newScale//2
+
+        # Look into how you can read many image files from one folder.
+        # IMPORTANT PORBLEM FIX
         pass
+
+    def __help(self):
+        # Initialise
+        pg.init()
+        screen = pg.display.set_mode((self._width, self._height))
+        running = True
+
+        # Buttons
+        help = pg.image.load(f"{self._finalImagePath}HelpScreen.png")
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+            screen.blit(help, (0,0))
+            pg.display.update()
+
+    def __options(self): #IMPORTANT PROBLEM FIX
+        changed = {}
+        while True:
+            ships = Game.getShips()
+            width = Game.getWidth()
+            height = Game.getHeight()
+            numShips = [0,0,0,0,0,0]
+            for ship in ships:
+                numShips[ship-1] += 1
+            specialsCounts = Game.getSpecials()
+            numPlayers = Game.getNumPlayers()
+
+            print("-----Options Menu-----")
+            print(f"1. Grid Width {width}")
+            print(f"2. Grid Height {height}")
+            print(f"3. Ship One {numShips[0]}")
+            print(f"4. Ship Two {numShips[1]}")
+            print(f"5. Ship Three {numShips[2]}")
+            print(f"6. Ship Four {numShips[3]}")
+            print(f"7. Ship Five {numShips[4]}")
+            print(f"8. Ship Six {numShips[5]}")
+
+            print("-----Special Mode-----")
+            print(f"9. Barrage {specialsCounts[0]}")
+            print(f"10. Radar {specialsCounts[1]}")
+            print(f"11. Mines {specialsCounts[2]}")
+            print(f"12. Hit Streak {specialsCounts[3]}")
+            print(f"13. Number of players {numPlayers}")
+            print("")
+            print("Write the number of the thing you want to change, followed by what it should be changed to. (e.g. 11 -1)")
+            print("Write 'E' to exit")
+            inp = input()
+            toChange = inp.split(" ")[0]
+            if toChange == "E":
+                break
+            newNum = inp.split(" ")[1]
+            if newNum.isnumeric():
+                newNum = int(newNum)
+            else:
+                continue
+            changed[int(toChange)-1] = newNum
+
+            if toChange == "1":
+                Game.changeBoardDimensions(newNum, height)
+            elif toChange == "2":
+                Game.changeBoardDimensions(width, newNum)
+            elif 3 <= int(toChange) <= 8:
+                Game.changeShips(int(toChange) - 3, newNum)
+            elif 9 <= int(toChange) <= 12:
+                Game.changeSpecials(int(toChange)-9, newNum)
+            elif toChange == "13":
+                if newNum > 1:
+                    Game.changeNumPlayers(newNum)
+                else:
+                    print("Must be 2 or more players")
+
+        with open("options.txt", "r") as f:
+            data = f.readlines()
+        
+        for index, newValue in changed.items():
+            if index == 12:
+                data[index] = str(newValue)
+            else:
+                data[index] = f"{newValue}\n"
+
+        with open("options.txt", "w") as f:
+            f.writelines(data)
+
+    def __load(self): #IMPORTANT PROBLEM FIX
+        if self._username is not None:
+            loads = self._network.send(f"getLoads {self._username}")
+        for load in loads.split(","):
+            print(load)
+
+        choice = input("Which game would you like to load?")
+        grids = self._network.send(f"loadGame {choice}")
+        grid1, grid2, ai = grids.split(" ")
+
+        Game.changeAI(ai)
+        game = Game()
+
+        for coordinate in grid1.split("|"): 
+            x,y = coordinate.split(",")
+            game.addShip(0, f"{x}{y}{0}{1}")
+
+        for coordinate in grid2.split("|"):
+            x,y = coordinate.split(",")
+            game.addShip(1, f"{x}{y}{0}{1}")
+
+        self.__local(ai, [game, False])
+
+    def __save(self): #IMPORTANT PROBLEM FIX
+        if self._username is None:
+            print("Must be logged in")
+            return
+        board1 = self._game.getBoard(0)
+        grid1 = ""
+        for y, row in enumerate(board1):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid1 += f"{x},{y}|"
+        grid1 = grid1[:-1]
+
+        board2 = self._game.getBoard(1)
+        grid2 = ""
+        for y, row in enumerate(board2):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid2 += f"{x},{y}|"
+        grid2 = grid2[:-1]
+
+        self._network.send(f'addGame {grid1} {grid2} {self._username} Guest ""')
 
     def __signUp(self):
-        pass
+        pg.init()
+        screen = pg.display.set_mode((self._width, self._height))
+        running = True
+
+        # Buttons
+        rects = []
+        buttonImages = [pg.image.load(f"{self._finalImagePath}Username.png"), pg.image.load(f"{self._finalImagePath}Password.png")]
+        for image in buttonImages:
+            rects.append(image.get_rect())
+            rects[-1].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + x*int(round((110/540)*self._height)), rects[-1].width, rects[-1].height) # repostion button
+        backGround = pg.image.load(f"{self._finalImagePath}SignUpMenu.png")
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                # Figure out how to get text input from user, then make them input username, then password
+
+            for index, image in enumerate(buttonImages):
+                screen.blit(image, (rects[index].left, rects[index].top))
+            screen.blit(backGround, (0,0))
+            pg.display.update()
 
     def __logIn(self):
-        pass
+        pg.init()
+        screen = pg.display.set_mode((self._width, self._height))
+        running = True
+
+        # Buttons
+        rects = []
+        buttonImages = [pg.image.load(f"{self._finalImagePath}Username.png"), pg.image.load(f"{self._finalImagePath}Password.png")]
+        for image in buttonImages:
+            rects.append(image.get_rect())
+            rects[-1].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + x*int(round((110/540)*self._height)), rects[-1].width, rects[-1].height) # repostion button
+        backGround = pg.image.load(f"{self._finalImagePath}SignUpMenu.png")
+
+        while running:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                # Figure out how to get text input from user, then make them input username, then password
+
+            for index, image in enumerate(buttonImages):
+                screen.blit(image, (rects[index].left, rects[index].top))
+            screen.blit(backGround, (0,0))
+            pg.display.update()
 
 class Terminal(UI):
     def __init__(self):
@@ -523,6 +773,8 @@ class Terminal(UI):
         while play:
             choice = input("Write 's' to save, anything else to continue")
             if choice.lower() == "s":
+                if numPlayers != 2:
+                    print("Can only save two player games.") # IMPORANT FIX PROBLEM
                 self.__save()
                 break
             for playerNum in range(numPlayers):
@@ -559,40 +811,57 @@ class Terminal(UI):
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
 
-    def __networkGame(self):
-        print(text2art("Online"))
-        enemyName = input("What is your enemies username?")
-        print("Setting up game with opponent...")
-        playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
-        playerNum = int(playerNum[1]) - 1
+    def __networkGame(self, game=[Game(), True]):
+        self._game = game[0]
+        if game[1]:
+            if self._username == "Guest":
+                print("Must be logged in!")
+                return
+            print(text2art("Online"))
+            enemyName = input("What is your enemy's username?")
+            print("Setting up game with opponent...")
+            playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+            playerNum = int(playerNum[1]) - 1
 
-        pp(self._game.getBoard(playerNum))
+            # get and compare player statistics
+            myStats = self._network.send(f"getStats {self._username}") # s1|s2|s3|s4
+            enemyStats = self._network.send(f"getStats {enemyStats}")
+            needsHelp = self._compare(myStats, enemyStats)
+            if needsHelp != -1:
+                print(f"It is recommended that player {needsHelp+1} gets help Y/N")
+                if needsHelp == playerNum:
+                    if input("Do you want to change your options to make the game easier? (Y/N)").upper() == "Y":
+                        self.__options()
+                    else:
+                        print("OK, continue as is. Good luck!")
+                else:
+                    print("Checking if enemy player wants to get help.")
 
-        numShips = Game.getNumShips()
-        ships = Game.getShips()
+            pp(self._game.getBoard(playerNum))
+            numShips = Game.getNumShips()
+            ships = Game.getShips()
 
-        for ship in ships:
-            print(f"Place down a ship of length {ship}")
-            while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
-                print("Invalid ship position, current state of board:")
-                pp(self._game.getBoard(playerNum))
-                numShips += 1
-            numShips -= 1
+            for ship in ships:
+                print(f"Place down a ship of length {ship}")
+                while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
+                    print("Invalid ship position, current state of board:")
+                    pp(self._game.getBoard(playerNum))
+                    numShips += 1
+                numShips -= 1
 
-        board = self._game.getBoard(playerNum)
-        grid = ""
-        for y, row in enumerate(board):
-            for x, value in enumerate(row):
-                if value == 1:
-                    grid += f"{x},{y}|"
+            board = self._game.getBoard(playerNum)
+            grid = ""
+            for y, row in enumerate(board):
+                for x, value in enumerate(row):
+                    if value == 1:
+                        grid += f"{x},{y}|"
 
-        grid = grid[:-1]
-        self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
-        enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
-        for coordinate in enemyGrid:
-            x,y = coordinate.split(",")
-            self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
-        
+            grid = grid[:-1]
+            self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
+            enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
+            for coordinate in enemyGrid:
+                x,y = coordinate.split(",")
+                self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
         # Ships have been placed
         # Start attacking:
 
@@ -756,4 +1025,3 @@ class Terminal(UI):
         grid2 = grid2[:-1]
 
         self._network.send(f'addGame {grid1} {grid2} {self._username} Guest ""')
-        

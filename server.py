@@ -152,14 +152,14 @@ class Server():
         sqlConnection.commit()
         return gameID
 
-    def startGame(self, p1, p2):
-        if [p2, p1, True, False] in self._games:
-            gameIndex = self._games.index([p2, p1, True, False])
-            gameID = self.addGame("", "", p2, p1, "")
+    def startGame(self, u1, u2):
+        if [u2, u1, True, False] in self._games:
+            gameIndex = self._games.index([u2, u1, True, False])
+            gameID = self.addGame("", "", u2, u1, "")
             self._games[gameIndex] = gameID
             return f"p2 {gameID}"
         else:
-            self._games.append([p1, p2, True, False])
+            self._games.append([u1, u2, True, False])
             gameIndex = len(self._games) - 1
             while not isinstance(self._games[gameIndex], int):
                 print("Waiting")
@@ -169,9 +169,9 @@ class Server():
             self._games.remove(gameID)
             return f"p1 {gameID}"
 
-    def updateGrids(self, grid, gameID, playerNumber):
+    def updateGrids(self, grid, gameID, playerNum):
         sqlConnection = sqlite3.connect("battleships.db")
-        sqlStatement = f"UPDATE Game SET grid{int(playerNumber)+1} = '{grid}' WHERE gameID = '{gameID}'"
+        sqlStatement = f"UPDATE Game SET grid{int(playerNum)+1} = '{grid}' WHERE gameID = '{gameID}'"
         sqlConnection.execute(sqlStatement)
         sqlConnection.commit()
         return "messageHere"

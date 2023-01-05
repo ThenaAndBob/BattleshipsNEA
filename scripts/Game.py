@@ -10,7 +10,6 @@ class Game():
     numPlayers = 2
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
-
     def __init__(self):
         self._players = Game.players
 
@@ -22,7 +21,7 @@ class Game():
                 if value == 1:
                     return [x,y]
 
-    def attack(self,x,y,playerNum, attackType): # Playerd ID = 0 or 1, the player being attacked
+    def attack(self,x,y,playerNum, attackType): # PlayerNum ID = 0 or 1, the player being attacked
         if attackType == 0:
             result = self._players[playerNum].attack(x,y) # index starts at 0 
             if isinstance(self._players[(playerNum +1)%2], AI):
