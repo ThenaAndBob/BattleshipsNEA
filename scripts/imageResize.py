@@ -5,19 +5,13 @@ import matplotlib.pyplot as plt
 #Read image
 ogScale = 2
 scaleIncrease = 10
-fromRelativePath = "SourceImages"
-toRelativePath = "FinalImages\Scale"
+fromRelativePath = "SourceImages\\IdeaImages"
+toRelativePath = "FinalImages\\Scale"
 ogimg=[
-        Image.open(f'{fromRelativePath}\HP1Ship{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\HP2Ship{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\HP3Ship{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\HP4Ship{ogScale}.png'), 
-        Image.open(f'{fromRelativePath}\HP5Ship{ogScale}.png'),
-        Image.open(f'{fromRelativePath}\HP6Ship{ogScale}.png')
+        Image.open(f'{fromRelativePath}\\OptionsMenu{ogScale}.png'), 
        ]
 
-finNames = ["HP1Ship","HP2Ship","HP3Ship","HP4Ship","HP5Ship","HP6Ship"]
-
+finNames = ["OptionMenu"]
 
 for x in range(len(ogimg)):
     #resize
@@ -25,4 +19,4 @@ for x in range(len(ogimg)):
     res=ogimg[x].resize(n_size,Image.Resampling.NEAREST)
 
     #save image
-    res.save(f"{toRelativePath}{ogScale*scaleIncrease}\{finNames[x]}.png") # Scale is relative to 48 * 27 pixels
+    res.save(f"{toRelativePath}{ogScale*scaleIncrease}\\{finNames[x]}.png") # Scale is relative to 48 * 27 pixels
