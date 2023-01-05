@@ -212,7 +212,7 @@ class Server():
         print("Get grid was successful -", result)
         return result
 
-serverIP = "192.168.0.117"
+serverIP = "192.168.2.49"
 port = 5555
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 myServer = Server()

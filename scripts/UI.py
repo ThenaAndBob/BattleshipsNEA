@@ -7,13 +7,14 @@ import os
 import pygame as pg
 from art import *
 from network import Network
+from PIL import Image
 
 class UI():
     def __init__(self):
         self._game = Game()
         self._username = "Guest" # This might be a problem.
         try:
-            # self._network = Network()
+            self._network = Network()
             pass
         except:
             print("Could not connect to server")
@@ -56,7 +57,7 @@ class UI():
     # Using a hashing algorithm to securely transfer user passwords.
     #
     #########################################################################
-    def hash(toHash):
+    def hash(self, toHash):
         length = 100
         if len(toHash) >= length:
             return None
@@ -459,11 +460,20 @@ class GUI(UI):
             pg.display.update()
 
     def addNewResolution(self, newScale):
-        scaleIncrease = newScale//2
+        ogScale = 2
+        scaleIncrease = newScale//ogScale
+        fileNames = os.listdir("SourceImages")
+        images = []
+        for name in fileNames:
+            images.append(Image.open(f"SourceImages\\{name}.png"))
 
-        # Look into how you can read many image files from one folder.
-        # IMPORTANT PORBLEM FIX
-        pass
+        for x in range(len(images)):
+            #resize
+            n_size=(images[x].size[0]*scaleIncrease,images[x].size[1]*scaleIncrease) #output size
+            res=images[x].resize(n_size,Image.Resampling.NEAREST)
+
+            #save image
+            res.save(f"FinalImages\\Scale{ogScale*scaleIncrease}\\{fileNames[x]}.png") # Scale is relative to 48 * 27 pixels
 
     def __help(self):
         # Initialise
@@ -599,6 +609,7 @@ class GUI(UI):
         else:
             backGround = pg.image.load(f"{self._finalImagePath}SignUpMenu.png")
 
+        password = ""
         while running:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -634,6 +645,7 @@ class GUI(UI):
                 screen.blit(image, (rects[index].left, rects[index].top))
             screen.blit(backGround, (0,0))
             pg.display.update()
+        self.__playMenu()
 
     def __getUserInput(self, title): # returns a string
         running = True
@@ -672,10 +684,11 @@ class GUI(UI):
                         print(event.key+delta, delta, result)
                         letterImages.append(pg.image.load(f"{self._finalImagePath}{chr(event.key).upper()}.png"))
                 elif event.type == pg.KEYUP:
-                    if delta == 0:
-                        delta = -32
-                    else:
-                        delta = 0
+                    if event.key == pg.K_LSHIFT:
+                        if delta == 0:
+                            delta = -32
+                        else:
+                            delta = 0
 
             screen.fill((0,168,243))
             position = 0

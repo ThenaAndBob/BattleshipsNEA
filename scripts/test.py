@@ -1,2 +1,3 @@
-for x in range(120):
-    print(x, chr(x))
+import os
+
+print(os.listdir("FinalImages\\Scale20"))
