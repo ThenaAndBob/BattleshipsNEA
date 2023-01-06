@@ -8,10 +8,10 @@ scaleIncrease = 10
 fromRelativePath = "SourceImages\\IdeaImages"
 toRelativePath = "FinalImages\\Scale"
 ogimg=[
-        Image.open(f'{fromRelativePath}\\OptionsMenu{ogScale}.png'), 
+        Image.open(f'{fromRelativePath}\\OptionsMenu{ogScale}.png')
        ]
 
-finNames = ["OptionMenu"]
+finNames = ["OptionsMenu"]
 
 for x in range(len(ogimg)):
     #resize
