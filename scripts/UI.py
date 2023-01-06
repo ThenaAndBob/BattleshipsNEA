@@ -4,6 +4,7 @@ from tkinter import E
 from Game import Game
 from pprint import pprint as pp
 import os
+import random
 import pygame as pg
 from art import *
 from network import Network
@@ -78,7 +79,6 @@ class UI():
             new = chr(prev)
         print("DEBUG -- hash complete")
         return toHash
-
 
 class GUI(UI):
     def __init__(self):
@@ -835,6 +835,12 @@ class Terminal(UI):
         print("AI difficulty:", aiDifficulty)
         self._game = game[0]
         numPlayers = Game.getNumPlayers()
+        hints = []
+        if Game.getSpecialCount()[4]:
+            hints = [
+                    ["Don't place ships to close to eachother.", "Be unpredictable", "Don't repeat what you have done previously.", "Place ships further from centre."], 
+                    ["The centre is most likely to contain ships", "Attack around an already hit ship to finnish it off.", "Attack in diagonals."]
+                    ]
 
         if game[1]:
             for playerNum in range(numPlayers): # Placing ships.
@@ -845,6 +851,8 @@ class Terminal(UI):
                 ships = Game.getShips()
 
                 for ship in ships:
+                    if len(hints):
+                        print(random.choice(hints[0]))
                     print(f"Player {playerNum+1} to place down ship of length {ship}")
                     while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, aiDifficulty, numShips-1)}{ship}") == -1:
                         print("Invalid ship position, current state of board:")
@@ -869,6 +877,9 @@ class Terminal(UI):
                 print(f"Player {playerNum+1} turn")
                 print(f"Player {playerNum+1} board:")
                 pp(self._game.getBoard(playerNum))
+
+                if len(hints):
+                    print(random.choice(hints[1]))
                 for deltaPlayer in range(1, numPlayers):
 
                     print(f"Player {((playerNum+deltaPlayer) % numPlayers) + 1} secret board:")
@@ -1028,7 +1039,8 @@ class Terminal(UI):
             print(f"10. Radar {specialsCounts[1]}")
             print(f"11. Mines {specialsCounts[2]}")
             print(f"12. Hit Streak {specialsCounts[3]}")
-            print(f"13. Number of players {numPlayers}")
+            print(f"13. Hints {specialsCounts[4]}")
+            print(f"14. Number of players {numPlayers}")
             print("")
             print("Write the number of the thing you want to change, followed by what it should be changed to. (e.g. 11 -1)")
             print("Write 'E' to exit")
@@ -1049,9 +1061,9 @@ class Terminal(UI):
                 Game.changeBoardDimensions(width, newNum)
             elif 3 <= int(toChange) <= 8:
                 Game.changeShips(int(toChange) - 3, newNum)
-            elif 9 <= int(toChange) <= 12:
+            elif 9 <= int(toChange) <= 13:
                 Game.changeSpecials(int(toChange)-9, newNum)
-            elif toChange == "13":
+            elif toChange == "14":
                 if newNum > 1:
                     Game.changeNumPlayers(newNum)
                 else:

@@ -6,7 +6,7 @@ class Game():
     shipCounts = [0,1,1,1,1,0]
     width = 10
     height = 10
-    specialCounts = [0,0,0,0] # barrage, radar, mine, hitstreak
+    specialCounts = [0,0,0,0,0] # barrage, radar, mine, hitstreak, hints
     numPlayers = 2
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
