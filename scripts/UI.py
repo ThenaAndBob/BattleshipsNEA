@@ -113,6 +113,9 @@ class GUI(UI):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     runningMenu = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        runningMenu = False
                 elif event.type == pg.MOUSEBUTTONDOWN: # Check if player pressed mouse
                     if event.button == 1: # Check if player pressed left mouse button
                         point = pg.mouse.get_pos() 
@@ -154,13 +157,15 @@ class GUI(UI):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     runningPlayMenu = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        runningPlayMenu = False
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         # Check which menu button it collided with and call that function.
                         point = pg.mouse.get_pos()
                         for i, rect in enumerate(rects):
                             if rect.collidepoint(point):
-                                pg.quit()
                                 if i == 0:
                                     self.__local(False, 0)
                                 elif i == 1:
@@ -177,7 +182,6 @@ class GUI(UI):
                                 else:
                                     runningPlayMenu = False
                                     pg.quit()
-            print(runningPlayMenu)
             screen.blit(backgroundImagePlayMenu, (0,0))
             pg.display.update()
 
@@ -251,14 +255,6 @@ class GUI(UI):
                                     shipImages[x] = pg.transform.rotate(shipImages[x], -90)
                                     rects[x] = shipImages[x].get_rect()
                                     break
-                        elif event.key == pg.K_o:
-                            runningLocal = False # To skip to attacking for debugging. delete later
-                        elif event.key == pg.K_d:
-                            print(f"ShipAttach: {shipAttach}")
-                            print(f"ShipHP: {shipHP}")
-                            print(f"ShipImages: {shipImages}")
-                            print(f"ShipLoc: {shipLoc}")
-                            print(f"ShipRotation: {shipRotation}")
                     elif event.type == pg.MOUSEBUTTONDOWN:
                         if event.button == 1 and 1 not in shipAttach:
                             point = pg.mouse.get_pos()
@@ -332,6 +328,7 @@ class GUI(UI):
                     x,y = coordinate.split(",")
                     self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
 
+        print(shipLoc)
         # Attacking starts:
         currentPlayer = 0
         runningLocal = True
@@ -364,6 +361,9 @@ class GUI(UI):
         attackTypeRect = attackTypeImage.get_rect()
         attackTypeRect.update(0,0,0,0) # IMPORTANT PROBLEM FIX
 
+        #numbers
+        numberImages = [pg.image.load(f"{self._finalImagePath}{num}.png") for num in range(10)]
+
         # Game loop   
         postHit = False         
         while runningLocal:
@@ -395,7 +395,12 @@ class GUI(UI):
                                 # attack that square and swap sides
                                 coords = [squareSize * round((point[0] - ((left + right//2 )% squareSize) - squareSize/2)/squareSize) + ((left + right//2) % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize)]
                                 coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
-                                result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1+numAttacked) % numPlayers, attackType)
+                                if attackType == 2:
+                                    result = self._game.radar((currentPlayer+1+numAttacked) % numPlayers)
+                                    if len(result):
+                                        print(result)
+                                else:
+                                    result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1+numAttacked) % numPlayers, attackType)
                                 if result == 2:
                                     print(f"Print {currentPlayer} won!")
                                     runningLocal = False
@@ -408,29 +413,35 @@ class GUI(UI):
                                 postHit = True
                                 if result == -2:
                                     # error or already attacked ship
+                                    print("Decrementing numAttacked.")
                                     numAttacked -= 1
-                                    currentPlayer = (currentPlayer + 1) % 2 # Because we dont want to currentPlayer to remain the same in 2 lines.
                                     postHit = False
 
                                 if network:
                                     previousAttack = self._network.send(f"updatePreviousAttack {coordinput[0]} {coordinput[1]} {playerNum} {attackType} {gameID}")
                                     print("Enemy player attacked - ", previousAttack) # IMPORTANT FIX PROBLEM 
                                     x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
-                                    self._game.attack(x, y, playerNum, attackType)
+                                    if attackType == 2:
+                                        result = self._game.radar((currentPlayer+1+numAttacked) % numPlayers)
+                                    else:
+                                        result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1+numAttacked) % numPlayers, attackType)
     
                                 numAttacked += 1
 
                                 if numAttacked == numPlayers-1:
                                     currentPlayer = (currentPlayer + 1) % numPlayers
+                                    numAttacked = 0
                                 if currentPlayer == 1 and ai != 0:
                                     x,y = self._game.getAIAttack()
                                     self._game.attack(x,y,0,0)
                                     currentPlayer = (currentPlayer + 1) % numPlayers
+                                    numAttacked = 0
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
             screen.fill((0,0,0))
 
             if not postHit:
+                print(currentPlayer, shipLoc, numAttacked)
                 for x in range(len(rects)):
                     rects[x].update((shipLoc[currentPlayer][x][0]-(tempX-left))//shrinkScale, (shipLoc[currentPlayer][x][1]-(tempY-top))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
                     screen.blit(shipImages[x], rects[x])
@@ -455,6 +466,18 @@ class GUI(UI):
                 screen.blit(attackTypeImage, attackTypeRect)
             else:
                 # Display the hitting animation, or a "press space to resume screen."
+                if isinstance(result, list):
+                    x,y = map(str, result)
+                    count = 0
+                    for ch in x:
+                        ch = int(ch)
+                        screen.blit(numberImages[ch], (count*self._scale*3, 0))
+                        count += 1
+                    count += 1
+                    for ch in y:
+                        ch = int(ch)
+                        screen.blit(numberImages[ch], (count*self._scale*3, 0))
+                        count += 1
                 pass
             pg.display.update()
 
@@ -527,7 +550,7 @@ class GUI(UI):
                             self.__addNewResolution(newNum)
                             runningOptions = False
                         else:
-                            changed[int(toChange)-1] = newNum
+                            changed[int(toChange)-2] = newNum
                         if toChange == "2":
                             Game.changeBoardDimensions(width, newNum)
                         elif toChange == "3":

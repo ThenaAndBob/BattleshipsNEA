@@ -11,9 +11,25 @@ class Game():
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
     def __init__(self):
+        with open("options.txt", "r") as f:
+            data = f.readline()
+            print(data)
+            data = data.split(",")
+        data = list(map(int, data))
+        Game.width, Game.height = data[:2]
+        for index, number in enumerate(data[2:8]):
+            Game.changeShips(index, number)
+        for index, number in enumerate(data[8:13]):
+            Game.changeSpecials(index, number)
+        Game.changeNumPlayers(data[13])
+        print(Game.width, Game.height, Game.ships, Game.specialCounts, Game.numPlayers)
         self._players = Game.players
+        
 
     def radar(self, playerNum):
+        specialCount = self._players[(playerNum+1)%2].getSpecials()
+        if specialCount[1] == 0:
+            return []
         board = self._players[playerNum].getBoard()
         self._players[(playerNum+1)%2].decrementSpecial(1)
         for y, row in enumerate(board):
@@ -27,9 +43,11 @@ class Game():
             if isinstance(self._players[(playerNum +1)%2], AI):
                 self._players[(playerNum +1)%2].hitFeedback(result, int(x),int(y))
             return result
-        else:
+        elif attackType == 1:
+            print("Barrage attack")
             specialCount = self._players[(playerNum+1)%2].getSpecials()
             if specialCount[attackType-1] == 0:
+                print("No barrage remaining.")
                 return -2
             self._players[(playerNum+1)%2].decrementSpecial(attackType-1)
             for yCoordinate in range(-1,2):
