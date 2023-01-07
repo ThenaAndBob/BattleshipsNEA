@@ -7,6 +7,12 @@ class Board():
         self._sGrid = [[0 for _ in range(width)] for _ in range(height)]
         # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
 
+    def clear(self):
+        print("DEBUG -- Clearing board")
+        self._grid = [[0 for _ in range(self._width)] for _ in range(self._height)]
+        self._shipHP = 0
+        self._sGrid = [[0 for _ in range(self._width)] for _ in range(self._height)]
+
     def attack(self,x,y): # Index starts at 0. 
         try:
             if x < 0 or x >= self._width or y < 0 or y >= self._height:
@@ -25,6 +31,7 @@ class Board():
                 return -2
         if self._sGrid[y][x] == 0:  # if empty
             self._sGrid[y][x] = -2
+            self._grid[y][x] = -2
             return -1
         if self._sGrid[y][x] == -2 : # if already hit
             return -2

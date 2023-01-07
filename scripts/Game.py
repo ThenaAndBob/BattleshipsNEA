@@ -11,20 +11,16 @@ class Game():
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
     def __init__(self):
-        with open("options.txt", "r") as f:
-            data = f.readline()
-            print(data)
-            data = data.split(",")
-        data = list(map(int, data))
-        Game.width, Game.height = data[:2]
-        for index, number in enumerate(data[2:8]):
-            Game.changeShips(index, number)
-        for index, number in enumerate(data[8:13]):
-            Game.changeSpecials(index, number)
-        Game.changeNumPlayers(data[13])
-        print(Game.width, Game.height, Game.ships, Game.specialCounts, Game.numPlayers)
         self._players = Game.players
-        
+        print(f"Number of players -- {Game.numPlayers}")
+        print(f"Grid dimensions -- {Game.width, Game.height}")
+        print(f"Speicals -- {Game.specialCounts}")        
+        print(f"Ships -- {Game.ships}")
+        print(f"ShipCounts -- {Game.shipCounts}")
+        print(f"Players -- {Game.players}")
+
+    def clearBoard(self, playerNum):
+        self._players[playerNum].clearBoard()
 
     def radar(self, playerNum):
         specialCount = self._players[(playerNum+1)%2].getSpecials()
@@ -118,7 +114,6 @@ class Game():
                 Game.ships.remove(shipIndex+1)
                 Game.shipCounts[shipIndex] -= 1
         
-
     @staticmethod
     def changeSpecials(specialIndex, newNumSpecials):
         if newNumSpecials < 0:
@@ -151,8 +146,11 @@ class Game():
 
     @staticmethod
     def changeNumPlayers(newNumPlayers):
+        print("DEBUG -- Changing the number of players to", newNumPlayers)
         Game.numPlayers = newNumPlayers
-        Game.changeAI(0) # Updates Game.players
+        if newNumPlayers != 2:
+            print("AI can only play 2 player games!")
+            Game.changeAI(0) # Updates Game.players
 
     @staticmethod
     def getNumPlayers():

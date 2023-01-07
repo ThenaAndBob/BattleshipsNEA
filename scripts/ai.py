@@ -62,6 +62,7 @@ class AI(Player):
             for y, row in enumerate(probabilityBoard):
                 for x, value in enumerate(row):
                     if count <= toAttack <= count + value:
+                        print([x,y])
                         return [x,y]
                     count += value
                     
@@ -77,7 +78,7 @@ class AI(Player):
                         for xC in range(len(board[yC])):
                             probabilityBoard[yC][xC] += self.__validDirections(board, ship, xC, yC)
             else:
-                sims = 100000
+                sims = 10000
                 probabilityBoard = [[0 for _ in range(10)] for _ in range (10)]
                 taken = []
                 for yi, y, in enumerate(board):
@@ -112,13 +113,17 @@ class AI(Player):
             print("ortogonal strat")
             x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
             y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
-            while board[y][x] == -1:
-                self._hit[3] += 1
-                x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
-                y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
+            try:
+                while board[y][x] == -1:
+                    self._hit[3] += 1
+                    x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
+                    y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
+            except IndexError:
+                pass    
 
             print("AI attacked:",x,y)
             print(self._hit)
+            print([x,y])
             return [x,y]
 
     def getShipPlacement(self, shipLength):
@@ -128,6 +133,7 @@ class AI(Player):
         return f"{random.randrange(0, width)}{random.randrange(0, height)}{random.randrange(0, 2)}{shipLength}"
 
     def hitFeedback(self,result, x,y):
+        print(result, self._hit)
         if self._hit is None and result == 1:
             self._hit = [x,y,0,1]
         elif self._hit is not None:
@@ -136,7 +142,7 @@ class AI(Player):
             elif self._sides == 1:
                 self._sides = 0 # The ship has been cleared out.
                 self._hit = None
-            else: # it was a miss
+            elif result == -1: # it was a miss
                 if self._hit[3] > 1: # We go to the other side of the ship/
                     self._hit[2] = (self._hit[2] + 2) % 4
                     self._hit[3] = 1
@@ -144,3 +150,9 @@ class AI(Player):
                 else:
                     print("direction incremented")
                     self._hit[2] += 1 # Rotate direction 90 degrees clockwise.
+            elif result == -2:
+                print(self._hit)
+                if self._hit[2] == 3:
+                    self._hit = None
+                else:
+                    self._hit[2] += 1

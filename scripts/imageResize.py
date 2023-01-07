@@ -3,15 +3,15 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 #Read image
-ogScale = 2
-scaleIncrease = 10
-fromRelativePath = "SourceImages\\IdeaImages"
+ogScale = 1
+scaleIncrease = 20
+fromRelativePath = "SourceImages"
 toRelativePath = "FinalImages\\Scale"
 ogimg=[
-        Image.open(f'{fromRelativePath}\\OptionsMenu{ogScale}.png')
+        Image.open(f'{fromRelativePath}\\,.png')
        ]
 
-finNames = ["OptionsMenu"]
+finNames = [","]
 
 for x in range(len(ogimg)):
     #resize

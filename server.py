@@ -58,6 +58,10 @@ class Server():
                     print(f"Updating previous attack to type {data[4]} by player {data[3]} at coordinates {data[1]}, {data[2]} in game {data[5]}")
                     connection.send(str.encode(self.updatePreviousAttack(data[1], data[2], data[3], data[4], data[5])))
 
+                elif dataType.lower() == "deletegame":
+                    print(f"Deleting game with game id {data[1]}")
+                    connection.send(str.encode(self.deleteGrid(data[1])))
+
                 print("")
 
             except Exception as e:
@@ -67,6 +71,14 @@ class Server():
         print("Connection lost")
         print("")
         connection.close()
+
+    def deleteGrid(gameID):
+        sqlConnection = sqlite3.connect("battleships.db")
+        sqlStatement = f"DELETE FROM Game WHERE GameID = '{gameID}'"
+        sqlConnection.execute(sqlStatement)
+        sqlConnection.commit()
+        return "deleted"
+
 
     def signUp(self, username, password):
         sqlConnection = sqlite3.connect("battleships.db")
@@ -145,7 +157,7 @@ class Server():
 
     def addGame(self, grid1, grid2, u1, u2, previousAttack):
         sqlConnection = sqlite3.connect("battleships.db")
-        sqlStatement = f"SELECT COUNT(*) FROM Game"
+        sqlStatement = "SELECT MAX(gameID) FROM Game"
         gameID = int(sqlConnection.execute(sqlStatement).fetchone()[0]) + 1
         sqlStatement = f"INSERT INTO Game (gameID, username1, username2, grid1, grid2, previousAttack) VALUES ('{gameID}', '{u1}', '{u2}', '{grid1}', '{grid2}', '{previousAttack}')"
         sqlConnection.execute(sqlStatement)

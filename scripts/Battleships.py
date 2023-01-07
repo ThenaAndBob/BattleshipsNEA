@@ -1,10 +1,6 @@
 from UI import GUI, Terminal
 from sys import argv
 
-#python scripts\Battleships.py t
-#python scripts\Battleships.py g
-#001, 550, 111, 570
-
 def usage():   
     print(f"""
 Usage: {argv[0]} [g | t]
@@ -15,9 +11,11 @@ t : play with the Terminal""")
 
 if __name__ == "__main__":
     if argv[1] == 'g':
+        print("Starting GUI version")
         ui = GUI()
         ui.run()
     elif argv[1] == 't':
+        print("Starting Terminal version")
         ui = Terminal()
         ui.run()
     else:

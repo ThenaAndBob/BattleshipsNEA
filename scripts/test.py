@@ -1,3 +1,3 @@
-import os
-
-print(os.listdir("FinalImages\\Scale20"))
+a = None
+if a is None:
+    print(a)

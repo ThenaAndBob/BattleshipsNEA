@@ -9,11 +9,11 @@ import pygame as pg
 from art import *
 from network import Network
 from PIL import Image
+import time
 
 class UI():
     def __init__(self):
-        self._game = Game()
-        self._username = "Guest" # This might be a problem.
+        self._username = "" 
         try:
             self._network = Network()
             pass
@@ -89,6 +89,17 @@ class GUI(UI):
         self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
 
     def run(self):
+        with open("options.txt", "r") as f:
+            data = f.readline()
+            data = data.split(",")
+        data = list(map(int, data))
+        Game.changeBoardDimensions(data[0], data[1])
+        for index, number in enumerate(data[2:8]):
+            Game.changeShips(index, number)
+        for index, number in enumerate(data[8:13]):
+            Game.changeSpecials(index, number)
+        Game.changeNumPlayers(data[13])
+
         self.__menu()
 
     def __menu(self):
@@ -150,8 +161,8 @@ class GUI(UI):
         rects[2] = pg.Rect(3*self._scale, 18*self._scale, 5*self._scale, 5*self._scale)
         rects[3] = pg.Rect(37*self._scale,20*self._scale,3*self._scale,5*self._scale)
         rects[4] = pg.Rect(31*self._scale,20*self._scale,5*self._scale,5*self._scale)
-        rects[5] = pg.Rect(41*self._scale,20*self._scale,5*self._scale,5*self._scale)
-        rects[6] = pg.Rect(12*self._scale,18*self._scale,15*self._scale,5*self._scale)
+        rects[5] = pg.Rect(12*self._scale,18*self._scale,15*self._scale,5*self._scale)
+        rects[6] = pg.Rect(41*self._scale,20*self._scale,5*self._scale,5*self._scale)
 
         while runningPlayMenu:
             for event in pg.event.get():
@@ -171,7 +182,12 @@ class GUI(UI):
                                 elif i == 1:
                                     self.__local(True, 0)
                                 elif i == 2:
-                                    aiDifficulty = 2 #fix
+                                    aiDifficulty = self.__getUserInput("aidifficulty")
+                                    try:
+                                        aiDifficulty = int(aiDifficulty)
+                                    except ValueError:
+                                        break
+                                    Game.changeAI(aiDifficulty)
                                     self.__local(False, aiDifficulty)
                                 elif i == 3:
                                     self.__help()
@@ -185,20 +201,26 @@ class GUI(UI):
             screen.blit(backgroundImagePlayMenu, (0,0))
             pg.display.update()
 
-    def __local(self, network, ai, game=[Game(), True]): # Network is a boolean 
-        if network:
-            enemyName = self.__getUserInput("EnemyName")
-            playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
-            playerNum = int(playerNum[1]) - 1
-            
+    def __local(self, network, ai, game=None): # Network is a boolean             
         # Initialise
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningLocal = True
         currentPlayer = 0
+
         numships = Game.getNumShips()
-        self._game = game[0]
-        numPlayers = Game.getNumPlayers()
+        if game is None:
+            self._game = Game()
+            numPlayers = Game.getNumPlayers()
+        else:
+            self._game = game[0]
+            numPlayers = 2
+
+        if network:
+            enemyName = self.__getUserInput("EnemyName")
+            playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+            playerNum = int(playerNum[1]) - 1
+            numPlayers = 1
 
         # Ships
         rects = []
@@ -208,11 +230,8 @@ class GUI(UI):
         for ship in shipHP:
             shipImages.append(pg.image.load(f"{self._finalImagePath}HP{ship}Ship.png"))
         shipRotation = [0 for _ in range(numships)]
-        shipLoc = [[(0, 0) for _ in range(numships)] for _ in range(numPlayers)] # Stores the top and left coordinates of ships.
         for image in shipImages:
             rects.append(image.get_rect())
-
-        print(shipHP, numPlayers, numships)
 
         # Buttons
         buttonImages = [pg.image.load(f"{self._finalImagePath}HP2Ship.png")]
@@ -226,23 +245,29 @@ class GUI(UI):
         HeightInSquares = 10 
         squareSize = round(self._scale*2.5) 
         print(squareSize)
+
         # Edges of the grid
         left = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
         right = self._width//2 + 5*squareSize
         top = self._height//2 - 5*squareSize
         bot = self._height//2 + 5*squareSize
         squares = []
+
         # Storing grid object in squares 
         for x in range(left, right, squareSize):
             for y in range(top, bot, squareSize):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
+        
+        playerNumberImage = [pg.image.load(f"{self._finalImagePath}P.png"), pg.image.load(f"{self._finalImagePath}{currentPlayer+1}.png")]
 
         # Loop for placing ships
-        if game[1]:
+        if game is None:
             while runningLocal:
                 for event in pg.event.get():
                     if event.type == pg.QUIT:
                         runningLocal = False
+                        if network:
+                             self._network.send(f"deletegame {gameID}")
                         pg.quit()
                     elif event.type == pg.KEYDOWN:
                         if event.key == pg.K_r: 
@@ -258,25 +283,32 @@ class GUI(UI):
                     elif event.type == pg.MOUSEBUTTONDOWN:
                         if event.button == 1 and 1 not in shipAttach:
                             point = pg.mouse.get_pos()
+                            changePlayer = True
                             if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
                                 # place down all ships and swap turns (and move ships back) or move on to actual game.
                                 for x in range(len(rects)):
-                                    self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
-                                    shipLoc[currentPlayer][x] = [rects[x].left, rects[x].top]
+                                    shipResult = self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
                                     if shipRotation[x]:
                                         shipImages[x] = pg.transform.rotate(shipImages[x], -90)
                                         rects[x] = shipImages[x].get_rect()
                                         shipRotation[x] = 0
-                                    rects[x].update(0, 0, rects[x].width, rects[x].height) # Should probably also rotate these back to horizontal to not spoil IMPORTANT FIX PROBLEM
-
-                                if currentPlayer == 0:
-                                    if ai != 0:
-                                        for health in shipHP:
-                                            self._game.addShip(1,self._game.getAIShip(health-2)) # health-2 = shipIndex
+                                    rects[x].update(0, 0, rects[x].width, rects[x].height) 
+                                    if shipResult == -1:
+                                        changePlayer = False
+                                
+                                print(currentPlayer, numPlayers)
+                                if changePlayer:
+                                    if currentPlayer == 0:
+                                        if ai != 0:
+                                            for health in shipHP:
+                                                self._game.addShip(1,self._game.getAIShip(health-2)) # health-2 = shipIndex
+                                            runningLocal = False
+                                    if currentPlayer == numPlayers-1:
                                         runningLocal = False
-                                elif currentPlayer == numPlayers-1:
-                                    runningLocal = False
-                                currentPlayer += 1
+                                    currentPlayer += 1
+                                    playerNumberImage[1] = pg.image.load(f"{self._finalImagePath}{currentPlayer+1}.png")
+                                else:
+                                    self._game.clearBoard(currentPlayer)
 
                             for x in range(len(rects)):
                                 if rects[x].collidepoint(point): # Checks if the mouse is inside one of the ships.
@@ -311,10 +343,13 @@ class GUI(UI):
                 for x in range(len(buttonImages)):
                     screen.blit(buttonImages[x], buttonRects[x])
 
+                P, pn = playerNumberImage
+                screen.blit(P, (round(screen.get_width()-(6*self._scale)), 0))
+                screen.blit(pn, (round(screen.get_width()-(3*self._scale)), 0))
                 pg.display.update()
 
             if network:
-                board = self._game.getBoard(playerNum)
+                board = self._game.getBoard(0)
                 grid = ""
                 for y, row in enumerate(board):
                     for x, value in enumerate(row):
@@ -326,19 +361,17 @@ class GUI(UI):
                 enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
                 for coordinate in enemyGrid:
                     x,y = coordinate.split(",")
-                    self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
+                    self._game.addShip(1, f"{x}{y}11")
 
-        print(shipLoc)
         # Attacking starts:
         currentPlayer = 0
+        playerNumbers = [num for num in range(numPlayers)]
         runningLocal = True
         shrinkScale = 1.15
         squareSize = int(squareSize//shrinkScale)  # Scale it down so that two grids can fit.
         numAttacked = 0
 
         # Edges of the grids
-        tempX = left
-        tempY = top
         left = int(squareSize)
         right = int(2*left + WidthInSquares*squareSize*2)   # 2*left to leave a gap between the two grids.
         top = int(squareSize)
@@ -359,8 +392,7 @@ class GUI(UI):
         attackType = 0
         attackTypeImage = pg.image.load(attackTypePaths[attackType])
         attackTypeRect = attackTypeImage.get_rect()
-        attackTypeRect.update(0,0,0,0) # IMPORTANT PROBLEM FIX
-
+        attackTypeRect.update(0,0,0,0)
         #numbers
         numberImages = [pg.image.load(f"{self._finalImagePath}{num}.png") for num in range(10)]
 
@@ -370,17 +402,21 @@ class GUI(UI):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     runningLocal = False
+                    if network:
+                         self._network.send(f"deletegame {gameID}")
                     pg.quit()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         postHit = False
+                        if result == ["AI", "Won"]:
+                            runningLocal = False
                     elif event.key == pg.K_s:
-                        self.__save() #IMPORTANT PROBLEM FIX -- Consider adding a check here, to make sure they want to save.
+                        self.__save() 
                         runningLocal = False
                     elif event.key == pg.K_c:
                         # Change the attacktype
                         attackType = (attackType+1)%3
-                        attackTypeImage = pg.image.load(attackTypePaths[attackType]) # IMPORTANT PROBLEM FIX
+                        attackTypeImage = pg.image.load(attackTypePaths[attackType])
                         attackTypeRect = attackTypeImage.get_rect()
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -388,29 +424,39 @@ class GUI(UI):
                         if attackTypeRect.collidepoint(point): 
                             # Change the attacktype
                             attackType = (attackType+1)%3
-                            attackTypeImage = pg.image.load(attackTypePaths[attackType]) # IMPORTANT PROBLEM FIX
+                            attackTypeImage = pg.image.load(attackTypePaths[attackType]) 
                             attackTypeRect = attackTypeImage.get_rect()
                         for x in range(len(enemySquares)):
                             if enemySquares[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # attack that square and swap sides
+                                if network:
+                                    toAttack = 1
+                                else:
+                                    toAttack = playerNumbers[(currentPlayer+1+numAttacked) % numPlayers]
+
                                 coords = [squareSize * round((point[0] - ((left + right//2 )% squareSize) - squareSize/2)/squareSize) + ((left + right//2) % squareSize), squareSize * round((point[1] - (top % squareSize) - squareSize/2)/squareSize) + (top % squareSize)]
                                 coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
+
                                 if attackType == 2:
-                                    result = self._game.radar((currentPlayer+1+numAttacked) % numPlayers)
+                                    result = self._game.radar(toAttack)
                                     if len(result):
                                         print(result)
                                 else:
-                                    result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1+numAttacked) % numPlayers, attackType)
+                                    result = self._game.attack(coordinput[0], coordinput[1], toAttack, attackType)
                                 if result == 2:
-                                    print(f"Print {currentPlayer} won!")
-                                    runningLocal = False
+                                    numPlayers -= 1
+                                    if numPlayers == 1:
+                                        print(f"Player {playerNumbers[currentPlayer]+1} won!")
+                                        result = [playerNumbers[currentPlayer]+1]
+                                    else:
+                                        print(toAttack+1, "was eliminated.")
+                                        playerNumbers.remove(toAttack)
                                 elif result == 1:
                                     print("Hit!")
                                     pass
                                 elif result == -1:
                                     print("Miss!")
                                     pass
-                                postHit = True
                                 if result == -2:
                                     # error or already attacked ship
                                     print("Decrementing numAttacked.")
@@ -419,43 +465,54 @@ class GUI(UI):
 
                                 if network:
                                     previousAttack = self._network.send(f"updatePreviousAttack {coordinput[0]} {coordinput[1]} {playerNum} {attackType} {gameID}")
-                                    print("Enemy player attacked - ", previousAttack) # IMPORTANT FIX PROBLEM 
                                     x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
                                     if attackType == 2:
-                                        result = self._game.radar((currentPlayer+1+numAttacked) % numPlayers)
+                                        result = self._game.radar(0)
                                     else:
-                                        result = self._game.attack(coordinput[0], coordinput[1], (currentPlayer+1+numAttacked) % numPlayers, attackType)
+                                        result = self._game.attack(x, y, 0, attackType)
+                                    break # Because we don't want to change the playernumber
     
                                 numAttacked += 1
 
-                                if numAttacked == numPlayers-1:
+                                if numAttacked >= numPlayers-1:
+                                    postHit = True
                                     currentPlayer = (currentPlayer + 1) % numPlayers
                                     numAttacked = 0
                                 if currentPlayer == 1 and ai != 0:
-                                    x,y = self._game.getAIAttack()
-                                    self._game.attack(x,y,0,0)
+                                    result = -2
+                                    print("outside while")
+                                    while result == -2:
+                                        x,y = self._game.getAIAttack()
+                                        print("inside while")
+                                        result = self._game.attack(x,y,0,0)
+
+                                    if result == 2:
+                                        print("AI won!")
+                                        result = [2]
+                                    else:
+                                        result = [x,y]
+
                                     currentPlayer = (currentPlayer + 1) % numPlayers
                                     numAttacked = 0
+
+                                print(playerNumbers,currentPlayer,numAttacked)
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
             screen.fill((0,0,0))
 
             if not postHit:
-                print(currentPlayer, shipLoc, numAttacked)
-                for x in range(len(rects)):
-                    rects[x].update((shipLoc[currentPlayer][x][0]-(tempX-left))//shrinkScale, (shipLoc[currentPlayer][x][1]-(tempY-top))//shrinkScale, rects[x].width//shrinkScale, rects[x].height//shrinkScale)
-                    screen.blit(shipImages[x], rects[x])
-
-                mySecretBoard = self._game.getSBoard(currentPlayer)
+                myBoard = self._game.getBoard(playerNumbers[currentPlayer]) # -2,-1,0,1
                 for x in range(len(squares)):
-                    if mySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
+                    if myBoard[x%10][x//10] == 1:
+                        pg.draw.rect(screen, (0,255,0), squares[x]) # Green fill for a ship.
+                    elif myBoard[x%10][x//10] == 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), squares[x], 1) # White grid for an unknown
-                    elif mySecretBoard[x%10][x//10] == -1:
+                    elif myBoard[x%10][x//10] == -1:
                         pg.draw.rect(screen, (255,0,0), squares[x]) # Red fill for a hit ship
                     else:
                         pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
                 
-                enemySecretBoard = self._game.getSBoard((currentPlayer+1)%2)  #0 = empty, -1 = hit ship, -2 = hit empty
+                enemySecretBoard = self._game.getSBoard(playerNumbers[(currentPlayer+1+numAttacked) % numPlayers])  #0 = empty, -1 = hit ship, -2 = hit empty
                 for x in range(len(enemySquares)):
                     if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
@@ -463,23 +520,34 @@ class GUI(UI):
                         pg.draw.rect(screen, (255,0,0), enemySquares[x]) # Red fill for a hit ship
                     else:
                         pg.draw.rect(screen, (0,0,255), enemySquares[x]) # Blue fill for known empty
-                screen.blit(attackTypeImage, attackTypeRect)
+
+                screen.blit(attackTypeImage, attackTypeRect) # Drawin the current attack type, N, B, or R
+                screen.blit(numberImages[playerNumbers[currentPlayer]+1], (0,6*self._scale)) # Drawing the current player
+                screen.blit(numberImages[playerNumbers[(currentPlayer+1+numAttacked) % numPlayers]+1], (screen.get_width()-3*self._scale, screen.get_height()-5*self._scale)) # Drawing the other grid's player
             else:
-                # Display the hitting animation, or a "press space to resume screen."
                 if isinstance(result, list):
-                    x,y = map(str, result)
-                    count = 0
-                    for ch in x:
-                        ch = int(ch)
-                        screen.blit(numberImages[ch], (count*self._scale*3, 0))
+                    if len(result) == 1:
+                        screen.blit(numberImages[result[0]], (screen.get_width()//2, screen.get_height()//2))
+                    else:
+                        x,y = map(str, result)
+                        count = 0
+                        for ch in x:
+                            ch = int(ch)
+                            screen.blit(numberImages[ch], (count*self._scale*3, 0))
+                            count += 1
+                        
                         count += 1
-                    count += 1
-                    for ch in y:
-                        ch = int(ch)
-                        screen.blit(numberImages[ch], (count*self._scale*3, 0))
-                        count += 1
+                        for ch in y:
+                            ch = int(ch)
+                            screen.blit(numberImages[ch], (count*self._scale*3, 0))
+                            count += 1
                 pass
             pg.display.update()
+
+        if network:
+            self._network.send(f"deletegame {gameID}")
+        elif game is not None:
+            self._network.send(f"deletegame {game[1]}")
 
     def __addNewResolution(self, newScale):
         ogScale = 2
@@ -504,16 +572,18 @@ class GUI(UI):
         runningHelp = True
 
         # Buttons
-        help = pg.image.load(f"{self._finalImagePath}HelpScreen.png")
+        help = pg.image.load(f"{self._finalImagePath}HelpMenu.png")
 
         while runningHelp:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     runningHelp = False
+                elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    runningHelp = False
             screen.blit(help, (0,0))
             pg.display.update()
 
-    def __options(self): #IMPORTANT PROBLEM FIX
+    def __options(self):
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningOptions = True
@@ -546,24 +616,27 @@ class GUI(UI):
                             print(e, toChange)
                             break
                         print(toChange, newNum)
-                        if toChange == "1":
+
+                        if toChange == 1:
                             self.__addNewResolution(newNum)
                             runningOptions = False
-                        else:
-                            changed[int(toChange)-2] = newNum
-                        if toChange == "2":
-                            Game.changeBoardDimensions(width, newNum)
-                        elif toChange == "3":
-                            Game.changeBoardDimensions(newNum, height)
-                        elif 4 <= int(toChange) <= 9:
-                            Game.changeShips(int(toChange) - 3, newNum)
-                        elif 10 <= int(toChange) <= 13:
-                            Game.changeSpecials(int(toChange)-9, newNum)
-                        elif toChange == "14":
+                        elif toChange == 14:
                             if newNum > 1:
                                 Game.changeNumPlayers(newNum)
                             else:
                                 print("Must be 2 or more players")
+                            changed[int(toChange)-1] = newNum # No hints in GUI mode D: IMPORTANT PROBLEM FIX.
+                        else:
+                            changed[int(toChange)-2] = newNum
+
+                        if toChange == 2:
+                            Game.changeBoardDimensions(width, newNum)
+                        elif toChange == 3:
+                            Game.changeBoardDimensions(newNum, height)
+                        elif 4 <= toChange <= 9:
+                            Game.changeShips(toChange - 4, newNum)
+                        elif 10 <= toChange <= 13:
+                            Game.changeSpecials(toChange-10, newNum)
 
             screen.blit(option, (0,0))
             pg.display.update()
@@ -574,21 +647,27 @@ class GUI(UI):
             data = data.split(",")
         print(data)
         for index, newValue in changed.items():
+            print(index)
             data[index] = str(newValue)
 
         with open("options.txt", "w") as f:
             f.writelines(",".join(data))
 
-    def __load(self): #IMPORTANT PROBLEM FIX
+    def __load(self):
         if self._username is not None:
             loads = self._network.send(f"getLoads {self._username}")
+        else:
+            return
 
         choice = "a"
         while not choice.isnumeric():
-            choice = self.__getUserInput(loads)
+            print("".join(loads), loads)
+            choice = self.__getUserInput("".join(loads))
+            if choice == "":
+                return
         grids = self._network.send(f"loadGame {choice}")
         grid1, grid2, ai = grids.split(" ")
-
+        ai = int(ai)
         Game.changeAI(ai)
         game = Game()
 
@@ -644,7 +723,9 @@ class GUI(UI):
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     runningAuthenticate = False
-                if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    runningAuthenticate = False
+                elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
                     mouseLocation = pg.mouse.get_pos()
                     for index, rect in enumerate(rects):
                         if rect.collidepoint(mouseLocation):
@@ -660,7 +741,6 @@ class GUI(UI):
                                         self._username =  ""
                                         password = ""
                                     else:
-                                        print("logged in") # problem fix
                                         runningAuthenticate = False
                                 else:
                                     valid = self._network.send(f"signUp {self._username} {self.hash(password + self._username)}")
@@ -668,14 +748,17 @@ class GUI(UI):
                                         self._username = ""
                                         password = ""
                                     else:
-                                        print("Signed up")
                                         runningAuthenticate = False
 
             for index, image in enumerate(buttonImages):
                 screen.blit(image, (rects[index].left, rects[index].top))
             screen.blit(backGround, (0,0))
             pg.display.update()
-        self.__playMenu()
+
+        if self._username != "":
+            self.__playMenu()
+        else:
+            return
 
     def __getUserInput(self, title): # returns a string
         runningUserInput = True
@@ -733,6 +816,8 @@ class GUI(UI):
                     letterSize = 5
                 elif title[index].upper() == "I":
                     letterSize = 2
+                elif title[index].upper() == ",":
+                    letterSize = 1
                 else:
                     letterSize = 4
                 if title[index].isupper():
@@ -765,15 +850,15 @@ class Terminal(UI):
         
     def run(self):
         with open("options.txt", "r") as f:
-            data = f.readline().split(",")
-        print(data)
+            data = f.readline()
+            data = data.split(",")
         data = list(map(int, data))
         Game.changeBoardDimensions(data[0], data[1])
-        for index, numShips in enumerate(data[2:8]):
-            Game.changeShips(index, numShips)
-        for index, special in enumerate(data[8:12]):
-            Game.changeSpecials(index, special)
-        Game.changeNumPlayers(data[12])
+        for index, number in enumerate(data[2:8]):
+            Game.changeShips(index, number)
+        for index, number in enumerate(data[8:13]):
+            Game.changeSpecials(index, number)
+        Game.changeNumPlayers(data[13])
         self.__mainMenu()
     
     def __mainMenu(self):
@@ -815,8 +900,10 @@ class Terminal(UI):
             self._username = input("Username - ")
             password = input("Password - ")
             print("")
+            start = time.perf_counter()
             valid = self._network.send(f"login {self._username} {self.hash(password + self._username)}")
         
+        print(time.perf_counter() - start)
         self.__playMenu()
 
     def __playMenu(self):
@@ -856,7 +943,7 @@ class Terminal(UI):
             if playerNumber == 1:
                 return self._game.getAIAttack(), 0
         print("Your specials: [barrageCount, radarCount]")
-        print(self._game.getSpecialCount(playerNumber)[:-2]) # Don't care about mines or hitstreak
+        print(self._game.getSpecialCount(playerNumber)[:2]) # Don't care about mines or hitstreak
         print("0 - normal, 1 - barrage, 2 - radar")
         attackType = int(input("What attack do you want to use?"))
         if attackType <= 1:
@@ -864,19 +951,23 @@ class Terminal(UI):
             return coordinates, attackType
         return 0, attackType
 
-    def __local(self,aiDifficulty, game=[Game(), True]): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
-        Game.changeAI(aiDifficulty)
-        print("AI difficulty:", aiDifficulty)
-        self._game = game[0]
-        numPlayers = Game.getNumPlayers()
+    def __local(self,aiDifficulty, game=None): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
+        if game is None:
+            Game.changeAI(aiDifficulty)
+            print("AI difficulty:", aiDifficulty)
+            self._game = Game()
+            numPlayers = Game.getNumPlayers()
+        else:
+            self._game = game[0]
+            numPlayers = 2
         hints = []
-        if Game.getSpecialCount()[4]:
+        if Game.getSpecials()[4]:
             hints = [
                     ["Don't place ships to close to eachother.", "Be unpredictable", "Don't repeat what you have done previously.", "Place ships further from centre."], 
                     ["The centre is most likely to contain ships", "Attack around an already hit ship to finnish it off.", "Attack in diagonals."]
                     ]
 
-        if game[1]:
+        if game is None:
             for playerNum in range(numPlayers): # Placing ships.
                 print(f"Player {playerNum+1} turn")
                 pp(self._game.getBoard(playerNum))
@@ -899,6 +990,8 @@ class Terminal(UI):
                 os.system('cls')
 
             print("Time to attack!")
+      
+        playerNumbers = [num for num in range(numPlayers)]
         play = True
         while play:
             choice = input("Write 's' to save, anything else to continue")
@@ -907,34 +1000,40 @@ class Terminal(UI):
                     print("Can only save two player games.") # IMPORANT FIX PROBLEM
                 self.__save()
                 break
-            for playerNum in range(numPlayers):
-                print(f"Player {playerNum+1} turn")
-                print(f"Player {playerNum+1} board:")
-                pp(self._game.getBoard(playerNum))
+            for playerNum in range(len(playerNumbers)):
+                print(f"Player {playerNumbers[playerNum]+1} turn")
+                print(f"Player {playerNumbers[playerNum]+1} board:")
+                pp(self._game.getBoard(playerNumbers[playerNum]))
 
                 if len(hints):
                     print(random.choice(hints[1]))
                 for deltaPlayer in range(1, numPlayers):
+                    toAttack = playerNumbers[(playerNumbers[playerNum]+deltaPlayer) % numPlayers]
 
-                    print(f"Player {((playerNum+deltaPlayer) % numPlayers) + 1} secret board:")
-                    for row in self._game.getSBoard((playerNum+deltaPlayer) % numPlayers): # it returns a 2d array, so we print the rows.
+                    print(f"Player {(toAttack) + 1} secret board:")
+                    for row in self._game.getSBoard(toAttack): # it returns a 2d array, so we print the rows.
                         print(row)
 
                     result = -2
                     while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
-                        attackLocation, attackType = self.__getAttackInput(playerNum, aiDifficulty)
+                        attackLocation, attackType = self.__getAttackInput(playerNumbers[playerNum], aiDifficulty)
                         result = -2
                         if attackType == 2:
-                            result = self._game.radar((playerNum+deltaPlayer) % numPlayers)
+                            result = self._game.radar(toAttack)
                             print(f"There is a ship at x={result[0]}, y={result[1]}")
                         else:
                             try:
-                                result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), (playerNum+deltaPlayer) % numPlayers, attackType) # Index starts at 0
+                                result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), toAttack, attackType) # Index starts at 0
                             except IndexError:
                                 print("Invalid attack format")
                     if result == 2:
-                        print("Hit!")
-                        print(f"Player {playerNum+1} wins!")
+                        numPlayers -= 1
+                        if numPlayers == 1:
+                            print("Hit!")
+                            print(f"Player {playerNumbers[playerNum]+1} wins!")
+                        else:
+                            print(toAttack+1, "was eliminated.")
+                            playerNumbers.remove(toAttack)
                         play = False
                     elif result == 1:
                         print("Hit!")
@@ -944,60 +1043,61 @@ class Terminal(UI):
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
 
-    def __networkGame(self, game=[Game(), True]):
-        self._game = game[0]
-        if game[1]:
-            if self._username == "Guest":
-                print("Must be logged in!")
-                return
-            print(text2art("Online"))
-            enemyName = input("What is your enemy's username?")
-            print("Setting up game with opponent...")
-            playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
-            playerNum = int(playerNum[1]) - 1
+        if game is not None:
+            self._network.send(f"deletegame {game[1]}")
 
-            # get and compare player statistics
-            myStats = self._network.send(f"getStats {self._username}") # s1|s2|s3|s4
-            enemyStats = self._network.send(f"getStats {enemyStats}")
-            needsHelp = self._compare(myStats, enemyStats)
-            if needsHelp != -1:
-                print(f"It is recommended that player {needsHelp+1} gets help Y/N")
-                if needsHelp == playerNum:
-                    if input("Do you want to change your options to make the game easier? (Y/N)").upper() == "Y":
-                        self.__options()
-                    else:
-                        print("OK, continue as is. Good luck!")
+    def __networkGame(self):
+        self._game = Game()
+        if self._username == "Guest":
+            print("Must be logged in!")
+            return
+        print(text2art("Online"))
+        enemyName = input("What is your enemy's username?")
+        print("Setting up game with opponent...")
+        playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+        playerNum = int(playerNum[1]) - 1
+
+        # get and compare player statistics
+        myStats = self._network.send(f"getStats {self._username}") # s1|s2|s3|s4
+        enemyStats = self._network.send(f"getStats {enemyStats}")
+        needsHelp = self._compare(myStats, enemyStats)
+        if needsHelp != -1:
+            print(f"It is recommended that player {needsHelp+1} gets help Y/N")
+            if needsHelp == playerNum:
+                if input("Do you want to change your options to make the game easier? (Y/N)").upper() == "Y":
+                    self.__options()
                 else:
-                    print("Checking if enemy player wants to get help.")
+                    print("OK, continue as is. Good luck!")
+            else:
+                print("Checking if enemy player wants to get help.")
 
-            pp(self._game.getBoard(playerNum))
-            numShips = Game.getNumShips()
-            ships = Game.getShips()
+        pp(self._game.getBoard(playerNum))
+        numShips = Game.getNumShips()
+        ships = Game.getShips()
 
-            for ship in ships:
-                print(f"Place down a ship of length {ship}")
-                while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
-                    print("Invalid ship position, current state of board:")
-                    pp(self._game.getBoard(playerNum))
-                    numShips += 1
-                numShips -= 1
+        for ship in ships:
+            print(f"Place down a ship of length {ship}")
+            while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
+                print("Invalid ship position, current state of board:")
+                pp(self._game.getBoard(playerNum))
+                numShips += 1
+            numShips -= 1
 
-            board = self._game.getBoard(playerNum)
-            grid = ""
-            for y, row in enumerate(board):
-                for x, value in enumerate(row):
-                    if value == 1:
-                        grid += f"{x},{y}|"
+        board = self._game.getBoard(playerNum)
+        grid = ""
+        for y, row in enumerate(board):
+            for x, value in enumerate(row):
+                if value == 1:
+                    grid += f"{x},{y}|"
 
-            grid = grid[:-1]
-            self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
-            enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
-            for coordinate in enemyGrid:
-                x,y = coordinate.split(",")
-                self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
+        grid = grid[:-1]
+        self._network.send(f"updateGrids {grid} {gameID} {playerNum}")
+        enemyGrid = self._network.send(f"getGrid {gameID} {(playerNum+1)%2}").split("|")
+        for coordinate in enemyGrid:
+            x,y = coordinate.split(",")
+            self._game.addShip((playerNum+1) % 2, f"{x}{y}11")
         # Ships have been placed
         # Start attacking:
-
         play = True
         while play:
             print("Your board:")
@@ -1031,6 +1131,8 @@ class Terminal(UI):
             print("Enemy player attacked - ", previousAttack)
             x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
             self._game.attack(x, y, playerNum, attackType)
+
+        self._network.send(f"deletegame, {gameID}")
 
     def __help(self):
         print("\n")
@@ -1119,6 +1221,8 @@ class Terminal(UI):
             print(load)
 
         choice = input("Which game would you like to load?")
+        if choice.upper() == "E":
+            return
         grids = self._network.send(f"loadGame {choice}")
         grid1, grid2, ai = grids.split(" ")
 
@@ -1133,7 +1237,7 @@ class Terminal(UI):
             x,y = coordinate.split(",")
             game.addShip(1, f"{x}{y}{0}{1}")
 
-        self.__local(ai, [game, False])
+        self.__local(ai, [game, int(choice)])
 
     def __save(self):
         if self._username is None:

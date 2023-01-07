@@ -5,6 +5,11 @@ class Player():
         self._board = Board(width, height)
         self._ships = [] # ships stored as [[hp, [xCoord, yCoord], [xCoord, yCoord]...] ... ]
         self._specialCounts = specialCounts.copy() # a list of the number of specials the player has left, format: [barrageCount, radarCount, mineCount, hitStreak]
+        print("Creating player object")
+        print(f"Speicals - {self._specialCounts}")
+
+    def clearBoard(self):
+        self._board.clear()
 
     def attack(self, x,y): # index starts at 0
         result = self._board.attack(x,y)

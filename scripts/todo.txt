@@ -1,1 +1,1 @@
-# Bug fix GUI.
+Special attacks in network games, and fix Terminal networkGame()
