@@ -11,6 +11,9 @@ class Player():
     def clearBoard(self):
         self._board.clear()
 
+    def getHP(self):
+        return self._board.getHP()
+
     def attack(self, x,y): # index starts at 0
         result = self._board.attack(x,y)
         if result == 1:

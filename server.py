@@ -12,73 +12,104 @@ class Server():
         connection.send(str.encode("Connected"))
         print("Connected")
         while True: # Continue running while client is connected
-            try:
-                received = connection.recv(2048).decode("utf-8") # receive 2048 bits of data, increase if getting more
-                if not received:
-                    print("No data to receive, disconnecting")
-                    break
-                print("Received:", received)
-                data = received.split(" ")
-                dataType = data[0]
-                
-                if dataType.lower() == "signup": 
-                    print("Signing Up...")
-                    connection.send(str.encode(self.signUp(data[1], data[2])))
-                    # signUp returns 'true' or 'false', depending on whether the username can be added to the database.
-
-                elif dataType.lower() == "login":
-                    print("Logging In...")
-                    connection.send(str.encode(self.logIn(data[1], data[2])))
-                
-                elif dataType.lower() == "getloads":
-                    print("Getting loaded games")
-                    connection.send(str.encode(self.getLoads(data[1])))
-
-                elif dataType.lower() == "loadgame":
-                    print("getting grids")
-                    connection.send(str.encode(self.loadGame(data[1])))
-
-                elif dataType.lower() == "addgame": # Saving a game.
-                    print("adding game")
-                    connection.send(str.encode(str(self.addGame(data[1], data[2], data[3], data[4], data[5])))) # g1,g2,u1,u2,prevattack
-
-                elif dataType.lower() == "startgame": # Starting a network game
-                    print(f"Starting game {data[1]} against {data[2]}")
-                    connection.send(str.encode(self.startGame(data[1], data[2])))
-
-                elif dataType.lower() == "updategrids":
-                    print(f"Updating grid of player {data[3]} to {data[1]} in game {data[2]}")
-                    connection.send(str.encode(self.updateGrids(data[1], data[2], data[3])))
-
-                elif dataType.lower() == "getgrid":
-                    print(f"Getting grid of player {data[2]} in game {data[1]}")
-                    connection.send(str.encode(self.getGrid(data[1], data[2]))) # Game id, playernumber
-
-                elif dataType.lower() == "updatepreviousattack":
-                    print(f"Updating previous attack to type {data[4]} by player {data[3]} at coordinates {data[1]}, {data[2]} in game {data[5]}")
-                    connection.send(str.encode(self.updatePreviousAttack(data[1], data[2], data[3], data[4], data[5])))
-
-                elif dataType.lower() == "deletegame":
-                    print(f"Deleting game with game id {data[1]}")
-                    connection.send(str.encode(self.deleteGrid(data[1])))
-
-                print("")
-
-            except Exception as e:
-                print(e)
+            received = connection.recv(2048).decode("utf-8") # receive 2048 bits of data, increase if getting more
+            if not received:
+                print("No data to receive, disconnecting")
                 break
+            print("Received:", received)
+            data = received.split(" ")
+            dataType = data[0]
+            
+            if dataType.lower() == "signup": 
+                print("Signing Up...")
+                connection.send(str.encode(self.signUp(data[1], data[2])))
+                # signUp returns 'true' or 'false', depending on whether the username can be added to the database.
+
+            elif dataType.lower() == "login":
+                print("Logging In...")
+                connection.send(str.encode(self.logIn(data[1], data[2])))
+            
+            elif dataType.lower() == "getloads":
+                print("Getting loaded games")
+                connection.send(str.encode(self.getLoads(data[1])))
+
+            elif dataType.lower() == "loadgame":
+                print("getting grids")
+                connection.send(str.encode(self.loadGame(data[1])))
+
+            elif dataType.lower() == "addgame": # Saving a game.
+                print("adding game")
+                connection.send(str.encode(str(self.addGame(data[1], data[2], data[3], data[4], data[5])))) # g1,g2,u1,u2,prevattack
+
+            elif dataType.lower() == "startgame": # Starting a network game
+                print(f"Starting game {data[1]} against {data[2]}")
+                connection.send(str.encode(self.startGame(data[1], data[2])))
+
+            elif dataType.lower() == "updategrids":
+                print(f"Updating grid of player {data[3]} to {data[1]} in game {data[2]}")
+                connection.send(str.encode(self.updateGrids(data[1], data[2], data[3])))
+
+            elif dataType.lower() == "getgrid":
+                print(f"Getting grid of player {data[2]} in game {data[1]}")
+                connection.send(str.encode(self.getGrid(data[1], data[2]))) # Game id, playernumber
+
+            elif dataType.lower() == "updatepreviousattack":
+                print(f"Updating previous attack to type {data[4]} by player {data[3]} at coordinates {data[1]}, {data[2]} in game {data[5]}")
+                connection.send(str.encode(self.updatePreviousAttack(data[1], data[2], data[3], data[4], data[5])))
+
+            elif dataType.lower() == "deletegame":
+                print(f"Deleting game with game id {data[1]}")
+                connection.send(str.encode(self.deleteGame(data[1])))
+
+            elif dataType.lower() == "getstats":
+                print(f"Getting stats of player {data[1]}")
+                connection.send(str.encode(self.getStats(data[1])))
+
+            elif dataType.lower() == "updatestats":
+                print("Updating stats")
+                connection.send(str.encode(self.updateStats(data[1], data[2])))
+
+            print("")
+
 
         print("Connection lost")
         print("")
         connection.close()
 
-    def deleteGrid(gameID):
+    def deleteGame(self,gameID):
         sqlConnection = sqlite3.connect("battleships.db")
         sqlStatement = f"DELETE FROM Game WHERE GameID = '{gameID}'"
         sqlConnection.execute(sqlStatement)
         sqlConnection.commit()
         return "deleted"
 
+    def getStats(self,username):
+        sqlConnection = sqlite3.connect("battleships.db")
+        sqlStatement = f"SELECT stats FROM Player WHERE username = '{username}'"
+        print("Retuning index zero of", sqlConnection.execute(sqlStatement).fetchone())
+        return str(sqlConnection.execute(sqlStatement).fetchone()[0])
+
+    def updateStats(self,username,changeStats):
+        # wins,losses,hits,misses,highestHP,leastAttacks
+        changeStats = list(map(int, changeStats.split(",")))
+        currentStats = list(map(int, self.getStats(username).split(",")))
+        print(changeStats, currentStats)
+
+        for index, stat in enumerate(changeStats[:4]):
+            currentStats[index] += stat
+        if currentStats[4] < changeStats[4]:
+            currentStats[4] = changeStats[4]
+        if currentStats[5] > changeStats[5]:
+            currentStats[5] = changeStats[5]
+
+        currentStats = list(map(str, currentStats))
+        
+        sqlConnection = sqlite3.connect("battleships.db")
+        sqlStatement = f"UPDATE Player SET stats = '{','.join(currentStats)}' WHERE username = '{username}'"
+        sqlConnection.execute(sqlStatement)
+        sqlConnection.commit()
+    
+        return "updated"
 
     def signUp(self, username, password):
         sqlConnection = sqlite3.connect("battleships.db")
@@ -91,7 +122,7 @@ class Server():
 
         if result.fetchone() == None:
             print("Username is unique!")
-            sqlStatement = f"INSERT INTO Player (username, password) VALUES ('{username}', '{password}')"
+            sqlStatement = f"INSERT INTO Player (username, password, stats) VALUES ('{username}', '{password}', '0,0,0,0,0,1000000')"
             print(f"Adding username {username} and password {password}...")
 
             sqlConnection.execute(sqlStatement)
@@ -154,11 +185,14 @@ class Server():
         print("Returning", f"{grids[0]} {grids[1]} {aiLevel}")
         return f"{grids[0]} {grids[1]} {aiLevel}"
 
-
     def addGame(self, grid1, grid2, u1, u2, previousAttack):
         sqlConnection = sqlite3.connect("battleships.db")
         sqlStatement = "SELECT MAX(gameID) FROM Game"
-        gameID = int(sqlConnection.execute(sqlStatement).fetchone()[0]) + 1
+        gameID = sqlConnection.execute(sqlStatement).fetchone()[0]
+        if gameID is None:
+            gameID = 0
+        else:
+            gameID = int(gameID) + 1
         sqlStatement = f"INSERT INTO Game (gameID, username1, username2, grid1, grid2, previousAttack) VALUES ('{gameID}', '{u1}', '{u2}', '{grid1}', '{grid2}', '{previousAttack}')"
         sqlConnection.execute(sqlStatement)
         sqlConnection.commit()
@@ -169,6 +203,7 @@ class Server():
             gameIndex = self._games.index([u2, u1, True, False])
             gameID = self.addGame("", "", u2, u1, "")
             self._games[gameIndex] = gameID
+            print("Retuning", gameID)
             return f"p2 {gameID}"
         else:
             self._games.append([u1, u2, True, False])
@@ -179,6 +214,7 @@ class Server():
             print("Player two has connected")
             gameID = self._games[gameIndex]
             self._games.remove(gameID)
+            print("Retuning", gameID)
             return f"p1 {gameID}"
 
     def updateGrids(self, grid, gameID, playerNum):

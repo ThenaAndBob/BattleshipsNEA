@@ -29,14 +29,6 @@ class UI():
         raise NotImplementedError
 
     @abstractclassmethod
-    def __signUp():
-        raise NotImplementedError
-
-    @abstractclassmethod
-    def __logIn():
-        raise NotImplementedError
-
-    @abstractclassmethod
     def __options():
         raise NotImplementedError
 
@@ -52,6 +44,10 @@ class UI():
     def __load():
         raise NotImplementedError
 
+    @abstractclassmethod
+    def __save():
+        raise NotImplementedError
+        
     #########################################################################
     #
     # CATEGORY A SKILL: HASHING
@@ -80,6 +76,28 @@ class UI():
         print("DEBUG -- hash complete")
         return toHash
 
+    def compareStats(self, s1, s2): # wins,losses,hits,misses,highestHP,leastAttacks
+        s1 = list(map(int, s1))
+        s2 = list(map(int, s2))
+
+        winrate1 = s1[0]/(s1[0]+s1[1])
+        hitrate1 = s1[2]/(s1[2]+s1[3])
+
+        winrate2 = s2[0]/(s2[0]+s2[1])
+        hitrate2 = s2[2]/(s2[2]+s2[3])
+
+        if abs(winrate1-winrate2) > 0.1:
+            if winrate1 < winrate2:
+                return 0
+            else:
+                return 1
+        if abs(hitrate1-hitrate2) > 0.1:
+            if hitrate1 < hitrate2:
+                return 0
+            else:
+                return 1
+        return -1
+
 class GUI(UI):
     def __init__(self):
         super().__init__()
@@ -100,9 +118,9 @@ class GUI(UI):
             Game.changeSpecials(index, number)
         Game.changeNumPlayers(data[13])
 
-        self.__menu()
+        self.__mainMenu()
 
-    def __menu(self):
+    def __mainMenu(self):
         # Initialise
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
@@ -868,7 +886,8 @@ class Terminal(UI):
             print("1. Log in")
             print("2. Sign up")
             print("3. Guest")
-            print("4. Quit")
+            print("4. Statistics")
+            print("5. Quit")
 
             opt = input()
             if opt == "1":
@@ -877,6 +896,8 @@ class Terminal(UI):
                 self.__signUp()
             elif opt == "3":
                 self.__playMenu()
+            elif opt == "4":
+                self.__stats()
             else:
                 break
 
@@ -905,6 +926,12 @@ class Terminal(UI):
         
         print(time.perf_counter() - start)
         self.__playMenu()
+
+    def __stats(self):
+        if self._username != "":
+            stats = self._network.send(f"getStats {self._username}")
+        print("Format: wins,losses,hits,misses,highestHP,leastAttacks")
+        input(stats)
 
     def __playMenu(self):
         while True:
@@ -960,12 +987,18 @@ class Terminal(UI):
         else:
             self._game = game[0]
             numPlayers = 2
+
         hints = []
         if Game.getSpecials()[4]:
             hints = [
                     ["Don't place ships to close to eachother.", "Be unpredictable", "Don't repeat what you have done previously.", "Place ships further from centre."], 
                     ["The centre is most likely to contain ships", "Attack around an already hit ship to finnish it off.", "Attack in diagonals."]
                     ]
+        
+        if self._username != "":
+            attacks = 0
+            hits = 0
+            misses = 0
 
         if game is None:
             for playerNum in range(numPlayers): # Placing ships.
@@ -991,6 +1024,7 @@ class Terminal(UI):
 
             print("Time to attack!")
       
+        print(numPlayers)
         playerNumbers = [num for num in range(numPlayers)]
         play = True
         while play:
@@ -1026,6 +1060,7 @@ class Terminal(UI):
                                 result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), toAttack, attackType) # Index starts at 0
                             except IndexError:
                                 print("Invalid attack format")
+
                     if result == 2:
                         numPlayers -= 1
                         if numPlayers == 1:
@@ -1040,6 +1075,18 @@ class Terminal(UI):
                     elif result == -1:
                         print("Miss!")
 
+                    if playerNumbers[playerNum] == 0 and aiDifficulty and self._username:
+                        attacks += 1
+                        if result == 2:
+                            hits += 1
+                            self._network.send(f"updateStats {self._username} {1},{0},{hits},{misses},{self._game.getHP(0)},{attacks}")
+                        elif result == 1:
+                            hits += 1
+                        else:
+                            misses += 1
+                    elif result == 2 and aiDifficulty and self._username: # AI won
+                        self._network.send(f"updateStats {self._username} {0},{1},{hits},{misses},{self._game.getHP(0)},{attacks}")
+
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
 
@@ -1048,7 +1095,7 @@ class Terminal(UI):
 
     def __networkGame(self):
         self._game = Game()
-        if self._username == "Guest":
+        if self._username == "":
             print("Must be logged in!")
             return
         print(text2art("Online"))
@@ -1058,11 +1105,18 @@ class Terminal(UI):
         playerNum = int(playerNum[1]) - 1
 
         # get and compare player statistics
-        myStats = self._network.send(f"getStats {self._username}") # s1|s2|s3|s4
-        enemyStats = self._network.send(f"getStats {enemyStats}")
-        needsHelp = self._compare(myStats, enemyStats)
+        hits = 0
+        misses = 0
+
+        myStats = self._network.send(f"getStats {self._username}") # wins,losses,hits,misses,highestHP,leastAttacks
+        enemyStats = self._network.send(f"getStats {enemyName}")
+        print(myStats, enemyStats)
+        if myStats != "None" and enemyStats != "None":
+            needsHelp = self.compareStats(myStats, enemyStats)
+        else:
+            needsHelp = -1
         if needsHelp != -1:
-            print(f"It is recommended that player {needsHelp+1} gets help Y/N")
+            print(f"It is recommended that player {needsHelp+1} gets help.")
             if needsHelp == playerNum:
                 if input("Do you want to change your options to make the game easier? (Y/N)").upper() == "Y":
                     self.__options()
@@ -1118,19 +1172,25 @@ class Terminal(UI):
                     except IndexError:
                         print("Invalid attack format")
             if result == 2:
+                hits += 1
                 print("Hit!")
                 print(f"Player {playerNum+1} wins!")
                 play = False
-                self._network.send(f"won {playerNum}")
+                self._network.send(f"updateStats {1},{0},{hits},{misses},{0},{10000000}")
             elif result == 1:
+                hits += 1
                 print("Hit!")
             elif result == -1:
+                misses += 1
                 print("Miss!")
             
             previousAttack = self._network.send(f"updatePreviousAttack {attackLocation[0]} {attackLocation[1]} {playerNum} {attackType} {gameID}")
             print("Enemy player attacked - ", previousAttack)
             x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
-            self._game.attack(x, y, playerNum, attackType)
+            result = self._game.attack(x, y, playerNum, attackType)
+            if result == 2:
+                self._network.send(f"updateStats {0},{1},{hits},{misses},{0},{10000000}")
+                play = False
 
         self._network.send(f"deletegame, {gameID}")
 

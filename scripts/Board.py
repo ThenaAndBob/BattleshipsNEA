@@ -70,3 +70,5 @@ class Board():
     def getBoard(self):
         return self._grid
 
+    def getHP(self):
+        return self._shipHP
