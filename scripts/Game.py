@@ -72,6 +72,9 @@ class Game():
             print(shipIndex)
             input(e)
 
+    def getHP(self, pNum):
+        return self._players[pNum].getHP()
+
     def getAIAttack(self):
         print(self._players[0].getShips())
         return self._players[1].getAttack(self._players[0].getShips(), self._players[0].getSBoard())
@@ -135,7 +138,8 @@ class Game():
             Game.players = [Player(Game.width, Game.height, Game.specialCounts) for _ in range(Game.numPlayers)]
         else:
             print("Player vs AI 1v1")
-            Game.players = [Player(Game.width, Game.height, Game.specialCounts), AI(Game.width, Game.height, ai)]
+            Game.players = [Player(Game.width, Game.height, Game.specialCounts), AI(Game.width, Game.height, ai)]   
+            Game.numPlayers = 2
 
     @staticmethod
     def changeBoardDimensions(newWidth, newHeight):

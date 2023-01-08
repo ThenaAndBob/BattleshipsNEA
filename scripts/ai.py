@@ -132,7 +132,7 @@ class AI(Player):
         height = len(board)
         return f"{random.randrange(0, width)}{random.randrange(0, height)}{random.randrange(0, 2)}{shipLength}"
 
-    def hitFeedback(self,result, x,y):
+    def hitFeedback(self,result,x,y):
         print(result, self._hit)
         if self._hit is None and result == 1:
             self._hit = [x,y,0,1]
