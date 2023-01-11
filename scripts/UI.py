@@ -14,6 +14,19 @@ import time
 class UI():
     def __init__(self):
         self._username = "" 
+        with open("options.txt", "r") as f:
+            data = f.readline()
+            data = data.split(",")
+        data = list(map(int, data))
+        Game.changeBoardDimensions(data[0], data[1])
+        for index, number in enumerate(data[2:8]):
+            Game.changeShips(index, number)
+        for index, number in enumerate(data[8:13]):
+            Game.changeSpecials(index, number)
+        Game.changeNumPlayers(data[13])
+        Game.updatePlayers()
+        print(Game.specialCounts)
+
         try:
             self._network = Network()
             pass
@@ -76,23 +89,28 @@ class UI():
         print("DEBUG -- hash complete")
         return toHash
 
-    def compareStats(self, s1, s2): # wins,losses,hits,misses,highestHP,leastAttacks
-        s1 = list(map(int, s1))
-        s2 = list(map(int, s2))
+    def compareStats(self, s1, s2): # wins,losses,hits,misses,highestHP,leastAttack INTEGER LISTS
+        stats = [s1,s2]
+        winrates = []
+        hitrates = []
+        for statList in stats:
+            if statList[0] == statList[1] == 0:
+                winrates.append(0)
+            else:
+                winrates.append(statList[0]/(statList[0]+statList[1]))
 
-        winrate1 = s1[0]/(s1[0]+s1[1])
-        hitrate1 = s1[2]/(s1[2]+s1[3])
+            if statList[2] == statList[3] == 0:
+                hitrates.append(0)
+            else:
+                hitrates.append(statList[2]/(statList[2]+statList[3]))
 
-        winrate2 = s2[0]/(s2[0]+s2[1])
-        hitrate2 = s2[2]/(s2[2]+s2[3])
-
-        if abs(winrate1-winrate2) > 0.1:
-            if winrate1 < winrate2:
+        if abs(winrates[0]-winrates[1]) > 0.1:
+            if winrates[0] < winrates[1]:
                 return 0
             else:
                 return 1
-        if abs(hitrate1-hitrate2) > 0.1:
-            if hitrate1 < hitrate2:
+        if abs(hitrates[0]-hitrates[1]) > 0.1:
+            if hitrates[0] < hitrates[1]:
                 return 0
             else:
                 return 1
@@ -107,17 +125,6 @@ class GUI(UI):
         self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
 
     def run(self):
-        with open("options.txt", "r") as f:
-            data = f.readline()
-            data = data.split(",")
-        data = list(map(int, data))
-        Game.changeBoardDimensions(data[0], data[1])
-        for index, number in enumerate(data[2:8]):
-            Game.changeShips(index, number)
-        for index, number in enumerate(data[8:13]):
-            Game.changeSpecials(index, number)
-        Game.changeNumPlayers(data[13])
-
         self.__mainMenu()
 
     def __mainMenu(self):
@@ -196,8 +203,10 @@ class GUI(UI):
                         for i, rect in enumerate(rects):
                             if rect.collidepoint(point):
                                 if i == 0:
+                                    print("Starting regular game")
                                     self.__local(False, 0)
                                 elif i == 1:
+                                    print("Starting online game")
                                     self.__local(True, 0)
                                 elif i == 2:
                                     aiDifficulty = self.__getUserInput("aidifficulty")
@@ -219,7 +228,7 @@ class GUI(UI):
             screen.blit(backgroundImagePlayMenu, (0,0))
             pg.display.update()
 
-    def __local(self, network, ai, game=None): # Network is a boolean             
+    def __local(self, network, ai, game=None): # Network is a boolean
         # Initialise
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
@@ -279,7 +288,7 @@ class GUI(UI):
         playerNumberImage = [pg.image.load(f"{self._finalImagePath}P.png"), pg.image.load(f"{self._finalImagePath}{currentPlayer+1}.png")]
 
         # Loop for placing ships
-        if game is None:
+        if game is None: # We would skip this part if the game was loaded.
             while runningLocal:
                 for event in pg.event.get():
                     if event.type == pg.QUIT:
@@ -421,12 +430,12 @@ class GUI(UI):
                 if event.type == pg.QUIT:
                     runningLocal = False
                     if network:
-                         self._network.send(f"deletegame {gameID}")
+                        self._network.send(f"deletegame {gameID}")
                     pg.quit()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_a:
                         postHit = False
-                        if result == ["AI", "Won"]:
+                        if isinstance(result, list) and len(result) == 1:
                             runningLocal = False
                     elif event.key == pg.K_s:
                         self.__save() 
@@ -484,10 +493,8 @@ class GUI(UI):
                                 if network:
                                     previousAttack = self._network.send(f"updatePreviousAttack {coordinput[0]} {coordinput[1]} {playerNum} {attackType} {gameID}")
                                     x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
-                                    if attackType == 2:
-                                        result = self._game.radar(0)
-                                    else:
-                                        result = self._game.attack(x, y, 0, attackType)
+                                    if attackType != 2:
+                                        self._game.attack(x, y, 0, attackType)
                                     break # Because we don't want to change the playernumber
     
                                 numAttacked += 1
@@ -519,7 +526,13 @@ class GUI(UI):
             screen.fill((0,0,0))
 
             if not postHit:
-                myBoard = self._game.getBoard(playerNumbers[currentPlayer]) # -2,-1,0,1
+                if network:
+                    myNumber = 0
+                    enemyNumber = 1
+                else:
+                    myNumber = playerNumbers[currentPlayer]
+                    enemyNumber = playerNumbers[(currentPlayer+1+numAttacked) % numPlayers]
+                myBoard = self._game.getBoard(myNumber) # -2,-1,0,1
                 for x in range(len(squares)):
                     if myBoard[x%10][x//10] == 1:
                         pg.draw.rect(screen, (0,255,0), squares[x]) # Green fill for a ship.
@@ -530,7 +543,7 @@ class GUI(UI):
                     else:
                         pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
                 
-                enemySecretBoard = self._game.getSBoard(playerNumbers[(currentPlayer+1+numAttacked) % numPlayers])  #0 = empty, -1 = hit ship, -2 = hit empty
+                enemySecretBoard = self._game.getSBoard(enemyNumber)  #0 = empty, -1 = hit ship, -2 = hit empty
                 for x in range(len(enemySquares)):
                     if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
@@ -540,8 +553,8 @@ class GUI(UI):
                         pg.draw.rect(screen, (0,0,255), enemySquares[x]) # Blue fill for known empty
 
                 screen.blit(attackTypeImage, attackTypeRect) # Drawin the current attack type, N, B, or R
-                screen.blit(numberImages[playerNumbers[currentPlayer]+1], (0,6*self._scale)) # Drawing the current player
-                screen.blit(numberImages[playerNumbers[(currentPlayer+1+numAttacked) % numPlayers]+1], (screen.get_width()-3*self._scale, screen.get_height()-5*self._scale)) # Drawing the other grid's player
+                screen.blit(numberImages[myNumber+1], (0,6*self._scale)) # Drawing the current player
+                screen.blit(numberImages[enemyNumber+1], (screen.get_width()-3*self._scale, screen.get_height()-5*self._scale)) # Drawing the other grid's player
             else:
                 if isinstance(result, list):
                     if len(result) == 1:
@@ -659,6 +672,7 @@ class GUI(UI):
             screen.blit(option, (0,0))
             pg.display.update()
 
+        Game.updatePlayers()
         with open("options.txt", "r") as f:
             data = f.readline()
             print(data)
@@ -867,16 +881,6 @@ class Terminal(UI):
         super().__init__()
         
     def run(self):
-        with open("options.txt", "r") as f:
-            data = f.readline()
-            data = data.split(",")
-        data = list(map(int, data))
-        Game.changeBoardDimensions(data[0], data[1])
-        for index, number in enumerate(data[2:8]):
-            Game.changeShips(index, number)
-        for index, number in enumerate(data[8:13]):
-            Game.changeSpecials(index, number)
-        Game.changeNumPlayers(data[13])
         self.__mainMenu()
     
     def __mainMenu(self):
@@ -1108,13 +1112,14 @@ class Terminal(UI):
         hits = 0
         misses = 0
 
-        myStats = self._network.send(f"getStats {self._username}") # wins,losses,hits,misses,highestHP,leastAttacks
-        enemyStats = self._network.send(f"getStats {enemyName}")
-        print(myStats, enemyStats)
-        if myStats != "None" and enemyStats != "None":
+        try:
+            myStats = list(map(int, self._network.send(f"getStats {self._username}").split(","))) # wins,losses,hits,misses,highestHP,leastAttacks
+            enemyStats = list(map(int, self._network.send(f"getStats {enemyName}").split(",")))
             needsHelp = self.compareStats(myStats, enemyStats)
-        else:
+            print(myStats, enemyStats)
+        except:
             needsHelp = -1
+
         if needsHelp != -1:
             print(f"It is recommended that player {needsHelp+1} gets help.")
             if needsHelp == playerNum:
@@ -1265,6 +1270,7 @@ class Terminal(UI):
                 else:
                     print("Must be 2 or more players")
 
+        Game.updatePlayers()
         with open("options.txt", "r") as f:
             data = f.readline().split(",")
         print(data)

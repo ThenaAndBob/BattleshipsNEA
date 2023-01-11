@@ -34,6 +34,7 @@ class Game():
                     return [x,y]
 
     def attack(self,x,y,playerNum, attackType): # PlayerNum ID = 0 or 1, the player being attacked
+        print("Attacking player", playerNum, x, y, attackType)
         if attackType == 0:
             result = self._players[playerNum].attack(x,y) # index starts at 0 
             if isinstance(self._players[(playerNum +1)%2], AI):
@@ -94,6 +95,10 @@ class Game():
     @staticmethod
     def getShips():
         return Game.ships
+
+    @staticmethod
+    def updatePlayers():
+        Game.players = [Player(Game.width, Game.height, Game.specialCounts), Player(Game.width, Game.height, Game.specialCounts)]
 
     @staticmethod
     def getNumShips():

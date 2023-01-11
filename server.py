@@ -231,7 +231,7 @@ class Server():
             sqlConnection = sqlite3.connect("battleships.db")
             sqlStatement = f"SELECT previousAttack FROM Game WHERE gameID = '{gameID}'"
             previousAttack = sqlConnection.execute(sqlStatement).fetchone()[0] # Get where the enemy attacked last
-            print(previousAttack, ",", playerNum)
+            print(previousAttack, "", playerNum)
             if previousAttack == "":
                 sqlStatement = f"UPDATE Game SET previousAttack = '{x} {y} {attackType} {playerNum}' WHERE gameID = '{gameID}'" 
                 sqlConnection.execute(sqlStatement)
@@ -260,7 +260,7 @@ class Server():
         print("Get grid was successful -", result)
         return result
 
-serverIP = "192.168.2.49"
+serverIP = "172.16.2.150" #"192.168.2.49"
 port = 5555
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 myServer = Server()
