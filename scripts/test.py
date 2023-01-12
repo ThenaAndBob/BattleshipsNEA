@@ -1,2 +1,3 @@
-a = [1,2,3,4,5]
-print(",".join(a))
+import os
+
+print(os.path.isdir("FinalImages\\Scale20"))

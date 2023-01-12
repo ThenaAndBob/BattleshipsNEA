@@ -127,6 +127,35 @@ class GUI(UI):
     def run(self):
         self.__mainMenu()
 
+    def __stats(self): # fix this   
+        if self._username != "":
+            stats = self._network.send(f"getStats {self._username}") # Returns comma seperated string
+        else:
+            return
+        letters = []
+        for character in stats:
+            letters.append(pg.image.load(f"{self._finalImagePath}{character}.png"))        
+        
+        pg.init()
+        screen = pg.display.set_mode((self._width, self._height))
+        runningStats = True
+
+        while runningStats:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    runningStats = False
+
+            screen.fill((0,0,255))
+            position = 0
+            letterSize = 3
+            for index, letter in enumerate(letters):
+                if stats[index] == ",":
+                    position += 1
+                else:
+                    screen.blit(letter, (position, self._scale))
+                    position += self._scale*letterSize
+            pg.display.update()
+
     def __mainMenu(self):
         # Initialise
         pg.init()
@@ -163,6 +192,8 @@ class GUI(UI):
                                     self.__authenticate("signup")
                                 elif i == 2:
                                     self.__playMenu()
+                                elif i == 3:
+                                    self.__stats()
                                 else:
                                     runningMenu = False
 
@@ -583,10 +614,17 @@ class GUI(UI):
     def __addNewResolution(self, newScale):
         ogScale = 2
         scaleIncrease = newScale//ogScale
-        fileNames = os.listdir("SourceImages")
+
+        if os.path.isdir(f"FinalImages\\Scale{ogScale*scaleIncrease}"): # Check if the folder already exists.
+            self._scale = ogScale * scaleIncrease
+            self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
+            return
+        
+        # If the folder does not exist, we can create it.
+        fileNames = os.listdir("FinalImages\\Scale{ogScale}")
         images = []
         for name in fileNames:
-            images.append(Image.open(f"SourceImages\\{name}.png"))
+            images.append(Image.open(f"FinalImages\\Scale{ogScale}\\{name}"))
 
         for x in range(len(images)):
             #resize
