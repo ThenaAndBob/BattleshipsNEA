@@ -11,6 +11,12 @@ class Game():
     players = [Player(width, height, specialCounts), Player(width, height, specialCounts)]
 
     def __init__(self):
+        #########################################################################
+        #
+        # CATEGORY A SKILL: Composition
+        # A game has player objects stored in a list.
+        #
+        #########################################################################
         self._players = Game.players
         print(f"Number of players -- {Game.numPlayers}")
         print(f"Grid dimensions -- {Game.width, Game.height}")
