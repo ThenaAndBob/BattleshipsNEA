@@ -1,6 +1,4 @@
 from abc import abstractclassmethod
-from cProfile import run
-from tkinter import E
 from Game import Game
 from pprint import pprint as pp
 import os

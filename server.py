@@ -3,6 +3,12 @@ import _thread
 import sqlite3
 import time
 
+#########################################################################
+#
+# CATEGORY A SKILL: Client server model and server-side scripting
+# Using server-side scripting to query/modify a database and return a result to the user device.
+#
+#########################################################################
 class Server():
     def __init__(self):
         self._games = []
@@ -75,6 +81,14 @@ class Server():
         print("Connection lost")
         print("")
         connection.close()
+
+    #########################################################################
+    #
+    # CATEGORY B SKILL: Single table parameterised SQL and a simple data model in my database.
+    # Almost all of the functions after this comment block use SQL to query/modify a databse with
+    # a "Players" and "Games" table.
+    #
+    #########################################################################
 
     def deleteGame(self,gameID):
         sqlConnection = sqlite3.connect("battleships.db")
