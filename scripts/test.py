@@ -1,13 +1,15 @@
-import time
-from math import sqrt
+def odd(n):
+    return (3*n  + 1)//2
 
-start = time.perf_counter()
-a = 194894218491 ** 0.5
-time1 = time.perf_counter() - start
+def even(n):
+    return n//2
 
-start = time.perf_counter()
-b = sqrt(194894218491)
-time2 = time.perf_counter() - start
-
-print(time1, time2, time1-time2)
-print(a,b)
+n = 20 ** 100000 + 53
+while n != 1:
+    if n % 2 ==0:
+        n = even(n)
+    else:
+        n = odd(n)
+    try:
+        print(n)
+    except:pass
