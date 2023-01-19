@@ -121,6 +121,7 @@ class GUI(UI):
         self._width = 960
         self._height = 540
         self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
+        self._fillColour = (0,0,60)
 
     def run(self):
         self.__mainMenu()
@@ -143,7 +144,7 @@ class GUI(UI):
                 if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     runningStats = False
 
-            screen.fill((0,0,255))
+            screen.fill(self._fillColour)
             position = 0
             letterSize = 3
             for index, letter in enumerate(letters):
@@ -385,7 +386,7 @@ class GUI(UI):
                                     
                                     break
 
-                screen.fill((0,0,60))
+                screen.fill(self._fillColour)
                 for x in range(len(shipAttach)):  # Makes a ship follow the mouse around once it has been clicked.
                     if shipAttach[x] == 1:
                         rects[x].update(pg.mouse.get_pos()[0] - rects[x].width/2, pg.mouse.get_pos()[1] - rects[x].height/2, rects[x].width, rects[x].height)
@@ -552,7 +553,7 @@ class GUI(UI):
                                 print(playerNumbers,currentPlayer,numAttacked)
                                 break # Nothing else to do if a square has been found to be attacked.
                                 
-            screen.fill((0,0,0))
+            screen.fill(self._fillColour)
 
             if not postHit:
                 if network:
@@ -654,7 +655,7 @@ class GUI(UI):
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningOptions = True
-        titles = ["resolution", "length", "height", "ShipOne", "ShipTwo", "ShipThree", "ShipFour", "ShipFive", "ShipSix", "Barrage", "Radar", "Mine", "HitStreak", "numplayers"]
+        titles = ["resolution", "length", "height", "ShipOne", "ShipTwo", "ShipThree", "ShipFour", "ShipFive", "ShipSix", "Barrage", "Radar", "Mine", "HitStreak", "numplayers", "colour"]
         changed = {}
         option = pg.image.load(f"{self._finalImagePath}OptionsMenu.png")
         result = ""
@@ -678,7 +679,8 @@ class GUI(UI):
                         height = Game.getHeight()
                         width = Game.getWidth()
                         try:
-                            newNum = int(self.__getUserInput(titles[int(toChange)-1]))
+                            if toChange != 15:
+                                newNum = int(self.__getUserInput(titles[toChange-1]))
                         except Exception as e:
                             print(e, toChange)
                             break
@@ -704,6 +706,14 @@ class GUI(UI):
                             Game.changeShips(toChange - 4, newNum)
                         elif 10 <= toChange <= 13:
                             Game.changeSpecials(toChange-10, newNum)
+                        elif toChange == 15:
+                            try:
+                                red = int(self.__getUserInput("Red"))
+                                blue = int(self.__getUserInput("Blue"))
+                                green = int(self.__getUserInput("Green"))
+                            except ValueError:
+                                break
+                            self._fillColour = (red, blue, green)
 
             screen.blit(option, (0,0))
             pg.display.update()
@@ -875,7 +885,7 @@ class GUI(UI):
                         else:
                             delta = 0
 
-            screen.fill((0,168,243))
+            screen.fill(self._fillColour)
             position = 0
             for index, letter in enumerate(titleLetters):
                 if title[index].upper() == "M" or title[index].upper() == "W":
