@@ -40,7 +40,6 @@ class Game():
                     return [x,y]
 
     def attack(self,x,y,playerNum, attackType): # PlayerNum ID = 0 or 1, the player being attacked
-        print("Attacking player", playerNum, x, y, attackType)
         if attackType == 0:
             result = self._players[playerNum].attack(x,y) # index starts at 0 
             if isinstance(self._players[(playerNum +1)%2], AI):
@@ -51,6 +50,7 @@ class Game():
             specialCount = self._players[(playerNum+1)%2].getSpecials()
             if specialCount[attackType-1] == 0:
                 print("No barrage remaining.")
+                print("Specials - ", specialCount)
                 return -2
             self._players[(playerNum+1)%2].decrementSpecial(attackType-1)
             for yCoordinate in range(-1,2):
