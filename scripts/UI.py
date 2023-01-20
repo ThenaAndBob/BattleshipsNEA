@@ -463,10 +463,10 @@ class GUI(UI):
                         self._network.send(f"deletegame {gameID}")
                     pg.quit()
                 elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_a:
+                    if postHit:
                         postHit = False
                         if isinstance(result, list) and len(result) == 1:
-                            runningLocal = False
+                            runningLocal = False 
                     elif event.key == pg.K_s:
                         self.__save() 
                         runningLocal = False
@@ -1013,7 +1013,7 @@ class Terminal(UI):
         if int(ai) != 0:
             if playerNumber == 1:
                 return self._game.getAIShip(y)
-        return input((f"Ship in format xyr"))
+        return input((f"Ship in format x,y,r")).split(",")
 
     def __getAttackInput(self, playerNumber, ai): # x = player number, ai = ai difficulty
         if int(ai) != 0:
@@ -1062,9 +1062,15 @@ class Terminal(UI):
                     if len(hints):
                         print(random.choice(hints[0]))
                     print(f"Player {playerNum+1} to place down ship of length {ship}")
-                    while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, aiDifficulty, numShips-1)}{ship}") == -1:
+
+                    shipLocation = self.__getShipInput(playerNum, aiDifficulty, numShips-1)
+                    shipLocation.append(ship)
+                    while self._game.addShip(playerNum, shipLocation) == -1:
                         print("Invalid ship position, current state of board:")
                         pp(self._game.getBoard(playerNum))
+                        shipLocation = self.__getShipInput(playerNum, 0, numShips-1)
+                        shipLocation.append(ship)
+
                     numShips -= 1
 
                 pp(self._game.getBoard(playerNum))
@@ -1182,10 +1188,13 @@ class Terminal(UI):
 
         for ship in ships:
             print(f"Place down a ship of length {ship}")
-            while self._game.addShip(playerNum, f"{self.__getShipInput(playerNum, 0, numShips-1)}{ship}") == -1:
+            shipLocation = self.__getShipInput(playerNum, 0, numShips-1)
+            shipLocation.append(ship)
+            while self._game.addShip(playerNum, shipLocation) == -1:
                 print("Invalid ship position, current state of board:")
                 pp(self._game.getBoard(playerNum))
-                numShips += 1
+                shipLocation = self.__getShipInput(playerNum, 0, numShips-1)
+                shipLocation.append(ship)
             numShips -= 1
 
         board = self._game.getBoard(playerNum)
@@ -1315,8 +1324,8 @@ class Terminal(UI):
                     Game.changeNumPlayers(newNum)
                 else:
                     print("Must be 2 or more players")
-
-        Game.updatePlayers()
+            Game.updatePlayers()
+        
         with open("options.txt", "r") as f:
             data = f.readline().split(",")
         print(data)
@@ -1324,7 +1333,7 @@ class Terminal(UI):
             data[index] = str(newValue)
 
         with open("options.txt", "w") as f:
-            f.writelines(data)
+            f.writelines(",".join(data))
 
     def __load(self):
         if self._username is not None:
