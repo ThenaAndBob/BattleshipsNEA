@@ -2,6 +2,12 @@ from Player import Player
 from ai import AI
 
 class Game():
+    #########################################################################
+    #
+    # CATEGORY A SKILL: Lists
+    # The Game.ships and Game.players static variables are lists which can be changed by the user.
+    #
+    #########################################################################
     ships = [2,3,4,5]
     shipCounts = [0,1,1,1,1,0]
     width = 10
@@ -111,6 +117,12 @@ class Game():
     def getNumShips():
         return len(Game.ships)
 
+    #########################################################################
+    #
+    # CATEGORY A SKILL: Lists
+    # Adding or removing items from the Game.ships list.
+    #
+    #########################################################################
     @staticmethod
     def changeShips(shipIndex, newNumShips):
         if newNumShips < 0:
@@ -141,6 +153,13 @@ class Game():
             for _ in range(-dif):
                 Game.specialCounts[specialIndex] -= 1
 
+
+    #########################################################################
+    #
+    # CATEGORY A SKILL: Lists
+    # Changing the Game.players list based on user input.
+    #
+    #########################################################################
     @staticmethod
     def changeAI(ai):
         ai = int(ai)
@@ -160,7 +179,7 @@ class Game():
     def changeNumPlayers(newNumPlayers):
         Game.numPlayers = newNumPlayers
         if newNumPlayers != 2:
-            Game.changeAI(0) # Updates Game.players
+            Game.changeAI(0) # Updates Game.players to a list of size newNumPlayers
 
     @staticmethod
     def getNumPlayers():

@@ -10,6 +10,14 @@ class AI(Player):
         self._directions = [(0,-1), (1,0), (0,1), (-1,0)]
         self._sides = 0
 
+    #########################################################################
+    #
+    # CATEGORY A SKILL: Complex user-defined algorithms
+    # __validDirections(), __isValid(), __chooseAttackSquare(), and getAttack() are 
+    # combined to find the best attack for the AI using probability.
+    #
+    #########################################################################
+
     def __validDirections(self, board, shipLength, xCoordinate, yCoordinate):
         valid_directions = 0
         for direction in [[1,0],[-1,0],[0,1],[0,-1]]:

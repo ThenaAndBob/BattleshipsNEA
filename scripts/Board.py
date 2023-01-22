@@ -2,6 +2,12 @@ class Board():
     def __init__(self, width, height): # ships passed in as xyrh
         self._width = width
         self._height = height
+        #########################################################################
+        #
+        # CATEGORY B SKILL: Multi-dimensional array
+        # Defining two 2D arrays whcih are used to store the game boards.
+        #
+        #########################################################################
         self._grid = [[0 for _ in range(self._width)] for _ in range(self._height)]
         self._shipHP = 0
         self._sGrid = [[0 for _ in range(self._width)] for _ in range(self._height)]

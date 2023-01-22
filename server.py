@@ -221,12 +221,11 @@ class Server():
             return f"p2 {gameID}"
         else:
             self._games.append([u1, u2, True, False])
-            gameIndex = len(self._games) - 1
-            while not isinstance(self._games[gameIndex], int):
+            while not isinstance(self._games[-1], int):
                 print("Waiting")
                 time.sleep(2)
             print("Player two has connected")
-            gameID = self._games[gameIndex]
+            gameID = self._games[-1]
             self._games.remove(gameID)
             print("Retuning", gameID)
             return f"p1 {gameID}"

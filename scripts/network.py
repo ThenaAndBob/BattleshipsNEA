@@ -1,5 +1,11 @@
 import socket
 
+#########################################################################
+#
+# CATEGORY A SKILL: Client-server model
+# The network class acts as a middle man between the UI and server.
+#
+#########################################################################
 class Network():
     def __init__(self):
         self._client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -24,6 +24,12 @@ class UI():
         Game.changeNumPlayers(data[13])
         Game.updatePlayers()
 
+        #########################################################################
+        #
+        # CATEGORY A SKILL: Composition
+        # Defining a self._network variable which is a Network object. UI has a Network.
+        #
+        #########################################################################       
         try:
             self._network = Network()
             pass
@@ -36,10 +42,6 @@ class UI():
 
     @abstractclassmethod
     def __local():
-        raise NotImplementedError
-
-    @abstractclassmethod
-    def __options():
         raise NotImplementedError
 
     @abstractclassmethod
@@ -113,6 +115,36 @@ class UI():
                 return 1
         return -1
 
+
+    #########################################################################
+    #
+    # CATEGORY B SKILL: Text files and reading/writing from text files
+    # Reading a text file and then updating its contents based on a dictionary.
+    #
+    #########################################################################
+    #########################################################################
+    #
+    # CATEGORY B SKILL: Dictionaries
+    # Using a dictionary to know which options to change, and what they should
+    # be changed to.
+    #
+    #########################################################################
+    def updateOptions(self, changed):
+        Game.updatePlayers()
+        with open("options.txt", "r") as f:
+            data = f.readline().split(",")
+        for index, newValue in changed.items():
+            data[index] = str(newValue)
+
+        with open("options.txt", "w") as f:
+            f.writelines(",".join(data))
+
+#########################################################################
+#
+# CATEGORY A SKILL: Inheritance
+# The GUI inherits from the base UI class.
+#
+#########################################################################
 class GUI(UI):
     def __init__(self):
         super().__init__()
@@ -134,6 +166,10 @@ class GUI(UI):
         for character in stats:
             letters.append(pg.image.load(f"{self._finalImagePath}{character}.png"))        
         
+        alphabet = []
+        alphabet = [pg.image.load(f"{self._finalImagePath}{ch}.png") for ch in "abcdefghijklmnopqrstuvwxyz"]
+        titles = ["wins", "losses", "hits", "misses", "maxhp", "attacks"]
+
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningStats = True
@@ -156,13 +192,39 @@ class GUI(UI):
             xposition = 0
             letterSize = 3
             yposition = self._scale
+            for ch in titles[0]:
+                screen.blit(alphabet[ord(ch)-97], (xposition, yposition + camera))
+                if ch == "m" or ch == "w":
+                    letterSize = 6
+                elif ch == "q":
+                    letterSize = 5
+                elif ch == "i":
+                    letterSize = 2
+                else:
+                    letterSize = 4
+                xposition += self._scale * letterSize
+            xposition += self._scale * letterSize
+            i = 1
             for index, letter in enumerate(letters):
                 if stats[index] == ",":
                     yposition += 6*self._scale
                     xposition = 0
+                    for ch in titles[i]:
+                        screen.blit(alphabet[ord(ch)-97], (xposition, yposition + camera))
+                        if ch == "m" or ch == "w":
+                            letterSize = 6
+                        elif ch == "q":
+                            letterSize = 5
+                        elif ch == "i":
+                            letterSize = 2
+                        else:
+                            letterSize = 4
+                        xposition += self._scale * letterSize
+                    xposition += self._scale * letterSize
+                    i += 1
                 else:
                     screen.blit(letter, (xposition, yposition+camera))
-                    xposition += self._scale*letterSize
+                    xposition += self._scale*3
             pg.display.update()
 
     def __mainMenu(self):
@@ -277,8 +339,14 @@ class GUI(UI):
         screen = pg.display.set_mode((self._width, self._height))
         runningLocal = True
         currentPlayer = 0
-
+        shipHP = Game.getShips()
         numships = Game.getNumShips()
+        #########################################################################
+        #
+        # CATEGORY A SKILL: Composition
+        # Storing a Game object as a characteristic of the GUI class
+        #
+        #########################################################################
         if game is None:
             self._game = Game()
             numPlayers = Game.getNumPlayers()
@@ -286,17 +354,39 @@ class GUI(UI):
             self._game = game[0]
             numPlayers = 2
 
+        # Grid
+        WidthInSquares = Game.getWidth() # Dimensions of the grid in squares.
+        HeightInSquares = Game.getHeight()
+        squareSize = round(self._scale*2.5) 
+
         if network:
             enemyName = self.__getUserInput("EnemyName")
             playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
             playerNum = int(playerNum[1]) - 1
             numPlayers = 1
-
+            try:
+                myStats = list(map(int, self._network.send(f"getStats {self._username}").split(","))) # wins,losses,hits,misses,highestHP,leastAttacks
+                enemyStats = list(map(int, self._network.send(f"getStats {enemyName}").split(",")))
+                needsHelp = self.compareStats(myStats, enemyStats)
+                print(myStats, enemyStats)
+            except:
+                needsHelp = -1
+            if needsHelp != -1:
+                if needsHelp == 0 and self.__getUserInput(f"Help,Y,N").lower() == "y":
+                    self.__options()
+                    pg.quit()
+                    self.__mainMenu()
+                    return
+                elif needsHelp == 1:
+                    self._network.send(f"deletegame {gameID}")
+                    playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+                    playerNum = int(playerNum[1]) - 1
+                    
+            
         # Ships
         rects = []
         shipAttach = [0 for _ in range(numships)]
         shipImages = []
-        shipHP = Game.getShips()
         for ship in shipHP:
             shipImages.append(pg.image.load(f"{self._finalImagePath}HP{ship}Ship.png"))
         shipRotation = [0 for _ in range(numships)]
@@ -310,10 +400,6 @@ class GUI(UI):
             buttonRects.append(buttonImages[x].get_rect())
         buttonRects[0].update(0, self._height-(2*buttonRects[0].height), buttonRects[0].width, buttonRects[0].height)
 
-        # Grid
-        WidthInSquares = Game.getWidth() # Dimensions of the grid in squares.
-        HeightInSquares = Game.getHeight()
-        squareSize = round(self._scale*2.5) 
 
         # Edges of the grid
         left = (self._width - WidthInSquares*squareSize)//2   # Edges are five squares from the centre.
@@ -336,7 +422,7 @@ class GUI(UI):
                     if event.type == pg.QUIT:
                         runningLocal = False
                         if network:
-                             self._network.send(f"deletegame {gameID}")
+                            self._network.send(f"deletegame {gameID}")
                         pg.quit()
                     elif event.type == pg.KEYDOWN:
                         if event.key == pg.K_r: 
@@ -370,8 +456,11 @@ class GUI(UI):
                                 if changePlayer:
                                     if currentPlayer == 0:
                                         if ai != 0:
-                                            for x in range(len(shipHP)):
-                                                self._game.addShip(1,self._game.getAIShip(x)) # health-2 = shipIndex
+                                            x = 0
+                                            while x < len(shipHP):
+                                                print(x, shipHP)
+                                                if self._game.addShip(1,self._game.getAIShip(x)) == 1:
+                                                    x += 1
                                             runningLocal = False
                                     if currentPlayer == numPlayers-1:
                                         runningLocal = False
@@ -445,6 +534,8 @@ class GUI(UI):
         runningLocal = True
         squareSize = min(self._width//(2*WidthInSquares+3), self._height//HeightInSquares) # Scale it down so that two grids can fit.
         numAttacked = 0
+        hits = 0
+        misses = 0
 
         # Edges of the grids
         left = 3*self._scale
@@ -523,7 +614,7 @@ class GUI(UI):
                                     result = self._game.attack(coordinput[0], coordinput[1], toAttack, attackType, playerNumbers[currentPlayer])
                                 if result == 2:
                                     numPlayers -= 1
-                                    if numPlayers == 1:
+                                    if numPlayers <= 1:
                                         print(f"Player {playerNumbers[currentPlayer]+1} won!")
                                         result = [playerNumbers[currentPlayer]+1]
                                     else:
@@ -531,9 +622,11 @@ class GUI(UI):
                                         playerNumbers.remove(toAttack)
                                 elif result == 1:
                                     print("Hit!")
+                                    hits += 1
                                     pass
                                 elif result == -1:
                                     print("Miss!")
+                                    misses += 1
                                     pass
                                 if result == -2:
                                     # error or already attacked ship
@@ -541,11 +634,16 @@ class GUI(UI):
                                     numAttacked -= 1
                                     postHit = False
 
-                                if network:
+                                if network and result != -2:
                                     previousAttack = self._network.send(f"updatePreviousAttack {coordinput[0]} {coordinput[1]} {playerNum} {attackType} {gameID}")
-                                    x, y, attackType, pnumignore = map(int, previousAttack.split(" "))
-                                    if attackType != 2:
-                                        self._game.attack(x, y, 0, attackType)
+                                    x, y, enemyattackType, pnumignore = map(int, previousAttack.split(" "))
+                                    if result == [1]:
+                                        postHit = True
+                                        break
+                                    if enemyattackType != 2:
+                                        if self._game.attack(x, y, 0, enemyattackType) == 2:
+                                            result = [2]
+                                            postHit = True
                                     break # Because we don't want to change the playernumber
     
                                 numAttacked += 1
@@ -628,7 +726,13 @@ class GUI(UI):
                 pass
             pg.display.update()
 
-        if network:
+        attacks = hits + misses
+        if self._username != "":
+            if result == [1]:
+                self._network.send(f"updateStats {self._username} {1},{0},{hits},{misses},{self._game.getHP(0)},{attacks}")
+            else:
+                self._network.send(f"updateStats {self._username} {0},{1},{hits},{misses},{0},{10000000000000}")
+        if network and result == [2]:
             self._network.send(f"deletegame {gameID}")
         elif game is not None:
             self._network.send(f"deletegame {game[1]}")
@@ -746,18 +850,7 @@ class GUI(UI):
             screen.blit(option, (0,0))
             pg.display.update()
 
-        Game.updatePlayers()
-        with open("options.txt", "r") as f:
-            data = f.readline()
-            print(data)
-            data = data.split(",")
-        print(data)
-        for index, newValue in changed.items():
-            print(index)
-            data[index] = str(newValue)
-
-        with open("options.txt", "w") as f:
-            f.writelines(",".join(data))
+        self.updateOptions(changed)
 
     def __load(self):
         if self._username is not None:
@@ -946,6 +1039,12 @@ class GUI(UI):
         print("DEBUG -- Returning re", re)
         return re
 
+#########################################################################
+#
+# CATEGORY A SKILL: Inheritance
+# The Terminal inherits from the base UI class
+#
+#########################################################################
 class Terminal(UI):
     def __init__(self):
         super().__init__()
@@ -1063,6 +1162,12 @@ class Terminal(UI):
         return 0, attackType
 
     def __local(self,aiDifficulty, game=None): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
+        #########################################################################
+        #
+        # CATEGORY A SKILL: Composition
+        # Storing a Game object as a characteristic of the Terminal class
+        #
+        #########################################################################
         if game is None:
             Game.changeAI(aiDifficulty)
             print("AI difficulty:", aiDifficulty)
@@ -1187,6 +1292,12 @@ class Terminal(UI):
             self._network.send(f"deletegame {game[1]}")
 
     def __networkGame(self):
+        #########################################################################
+        #
+        # CATEGORY A SKILL: Composition
+        # Storing a Game object as a characteristic of the Terminal class
+        #
+        #########################################################################
         self._game = Game()
         if self._username == "":
             print("Must be logged in!")
@@ -1353,6 +1464,13 @@ class Terminal(UI):
                     input("Invalid type")
                     continue
             
+            #########################################################################
+            #
+            # CATEGORY B SKILL: Dictionaries
+            # Adding a key value pair to a dictionary. This stores the option to be
+            # changed, and what it should be changed to.
+            #
+            #########################################################################
             if toChange < 15:
                 changed[toChange-1] = newNum
             else:
@@ -1373,14 +1491,7 @@ class Terminal(UI):
                     print("Must be 2 or more players")
             Game.updatePlayers()
         
-        with open("options.txt", "r") as f:
-            data = f.readline().split(",")
-        for index, newValue in changed.items():
-            print(index, data)
-            data[index] = str(newValue)
-
-        with open("options.txt", "w") as f:
-            f.writelines(",".join(data))
+        self.updateOptions(changed)
 
     def __load(self):
         if self._username is not None:
