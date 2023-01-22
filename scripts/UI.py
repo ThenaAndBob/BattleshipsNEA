@@ -23,7 +23,6 @@ class UI():
             Game.changeSpecials(index, number)
         Game.changeNumPlayers(data[13])
         Game.updatePlayers()
-        print(Game.specialCounts)
 
         try:
             self._network = Network()
@@ -118,15 +117,15 @@ class GUI(UI):
     def __init__(self):
         super().__init__()
         self._scale = 20
-        self._width = 960
-        self._height = 540
+        self._width = 48*self._scale
+        self._height = 27*self._scale
         self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
-        self._fillColour = (0,0,60)
+        self._fillColour = (0,168,243)
 
     def run(self):
         self.__mainMenu()
 
-    def __stats(self): # fix this   
+    def __stats(self): 
         if self._username != "":
             stats = self._network.send(f"getStats {self._username}") # Returns comma seperated string
         else:
@@ -138,21 +137,32 @@ class GUI(UI):
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningStats = True
+        camera = 0
+        clock = pg.time.Clock()
 
         while runningStats:
             for event in pg.event.get():
-                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                    runningStats = False
+                if event.type == pg.QUIT:
+                    pg.quit()
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        runningStats = False
+                elif event.type == pg.MOUSEWHEEL:
+                    camera += event.y*30
+            clock.tick(60)
+            
 
             screen.fill(self._fillColour)
-            position = 0
+            xposition = 0
             letterSize = 3
+            yposition = self._scale
             for index, letter in enumerate(letters):
                 if stats[index] == ",":
-                    position += 1
+                    yposition += 6*self._scale
+                    xposition = 0
                 else:
-                    screen.blit(letter, (position, self._scale))
-                    position += self._scale*letterSize
+                    screen.blit(letter, (xposition, yposition+camera))
+                    xposition += self._scale*letterSize
             pg.display.update()
 
     def __mainMenu(self):
@@ -170,8 +180,10 @@ class GUI(UI):
         # Position buttons correctly.
         rects[0].update(int(round((5/96)*self._width)), int(round((19/54)*self._height)), rects[0].width, rects[0].height)
         rects[1].update(int(round((5/96)*self._width)), int(round((38/54)*self._height)), rects[1].width, rects[1].height)
-        rects[2].update(int(round((53/96)*self._width)), int(round((19/54)*self._height)), rects[1].width, rects[2].height)
-        rects[3].update(int(round((53/96)*self._width)), int(round((38/54)*self._height)), rects[1].width, rects[3].height)
+        rects[2].update(int(round((53/96)*self._width)), int(round((19/54)*self._height)), rects[2].width, rects[2].height)
+        rects[3].update(int(round((53/96)*self._width)), int(round((38/54)*self._height)), rects[3].width, rects[3].height)
+        rects.append(pg.Rect(41*self._scale, 22*self._scale, 6*self._scale, 4*self._scale))
+        
 
         while runningMenu:
             for event in pg.event.get():
@@ -192,9 +204,9 @@ class GUI(UI):
                                 elif i == 2:
                                     self.__playMenu()
                                 elif i == 3:
-                                    self.__stats()
-                                else:
                                     runningMenu = False
+                                elif i == 4:
+                                    self.__stats()
 
             screen.blit(backgroundImage, (0,0))
             for image, rect in zip(buttonImages, rects):
@@ -244,7 +256,6 @@ class GUI(UI):
                                         aiDifficulty = int(aiDifficulty)
                                     except ValueError:
                                         break
-                                    Game.changeAI(aiDifficulty)
                                     self.__local(False, aiDifficulty)
                                 elif i == 3:
                                     self.__help()
@@ -261,6 +272,8 @@ class GUI(UI):
     def __local(self, network, ai, game=None): # Network is a boolean
         # Initialise
         pg.init()
+        Game.updatePlayers()
+        Game.changeAI(ai)
         screen = pg.display.set_mode((self._width, self._height))
         runningLocal = True
         currentPlayer = 0
@@ -298,16 +311,15 @@ class GUI(UI):
         buttonRects[0].update(0, self._height-(2*buttonRects[0].height), buttonRects[0].width, buttonRects[0].height)
 
         # Grid
-        WidthInSquares = 10 # Dimensions of the grid in squares.
-        HeightInSquares = 10 
+        WidthInSquares = Game.getWidth() # Dimensions of the grid in squares.
+        HeightInSquares = Game.getHeight()
         squareSize = round(self._scale*2.5) 
-        print(squareSize)
 
         # Edges of the grid
-        left = self._width//2 - 5*squareSize   # Edges are five squares from the centre.
-        right = self._width//2 + 5*squareSize
-        top = self._height//2 - 5*squareSize
-        bot = self._height//2 + 5*squareSize
+        left = (self._width - WidthInSquares*squareSize)//2   # Edges are five squares from the centre.
+        right = (self._width + WidthInSquares*squareSize)//2
+        top = (self._height - HeightInSquares*squareSize)//2
+        bot = (self._height + HeightInSquares*squareSize)//2
         squares = []
 
         # Storing grid object in squares 
@@ -344,7 +356,9 @@ class GUI(UI):
                             if buttonRects[0].collidepoint(point) and 0 not in shipAttach and 1 not in shipAttach:  # buttonRects[0] is the done button
                                 # place down all ships and swap turns (and move ships back) or move on to actual game.
                                 for x in range(len(rects)):
-                                    shipResult = self._game.addShip(currentPlayer, f"{(rects[x].left - left)//squareSize}{(rects[x].top-top)//squareSize}{shipRotation[x]}{shipHP[x]}")
+                                    shipLocation = [(rects[x].left - left)//squareSize, (rects[x].top-top)//squareSize,shipRotation[x], shipHP[x]]
+                                    shipResult = self._game.addShip(currentPlayer, shipLocation)
+                                    print(shipResult)
                                     if shipRotation[x]:
                                         shipImages[x] = pg.transform.rotate(shipImages[x], -90)
                                         rects[x] = shipImages[x].get_rect()
@@ -353,12 +367,11 @@ class GUI(UI):
                                     if shipResult == -1:
                                         changePlayer = False
                                 
-                                print(currentPlayer, numPlayers)
                                 if changePlayer:
                                     if currentPlayer == 0:
                                         if ai != 0:
-                                            for health in shipHP:
-                                                self._game.addShip(1,self._game.getAIShip(health-2)) # health-2 = shipIndex
+                                            for x in range(len(shipHP)):
+                                                self._game.addShip(1,self._game.getAIShip(x)) # health-2 = shipIndex
                                             runningLocal = False
                                     if currentPlayer == numPlayers-1:
                                         runningLocal = False
@@ -368,7 +381,7 @@ class GUI(UI):
                                     self._game.clearBoard(currentPlayer)
 
                             for x in range(len(rects)):
-                                if rects[x].collidepoint(point): # Checks if the mouse is inside one of the ships.
+                                if rects[x].collidepoint(point): # Checks if the mouse is on one of the ships.
                                     # Mouse attaches to ship and starts moving it around.
                                     shipAttach[x] = 1
                                     break  # Break cause otherwise you can pick up multiple ships at once.
@@ -420,29 +433,35 @@ class GUI(UI):
                     x,y = coordinate.split(",")
                     self._game.addShip(1, f"{x}{y}11")
 
-        # Attacking starts:
+        #
+        #
+        #
+        # ATTACKING STARTS
+        #
+        #
+        #
         currentPlayer = 0
         playerNumbers = [num for num in range(numPlayers)]
         runningLocal = True
-        shrinkScale = 1.15
-        squareSize = int(squareSize//shrinkScale)  # Scale it down so that two grids can fit.
+        squareSize = min(self._width//(2*WidthInSquares+3), self._height//HeightInSquares) # Scale it down so that two grids can fit.
         numAttacked = 0
 
         # Edges of the grids
-        left = int(squareSize)
-        right = int(2*left + WidthInSquares*squareSize*2)   # 2*left to leave a gap between the two grids.
+        left = 3*self._scale
+        r1 = left + WidthInSquares*squareSize
+        right = r1 + squareSize + WidthInSquares*squareSize
         top = int(squareSize)
         bot = int(top + HeightInSquares*squareSize)
         squares = []
         enemySquares = []
         enemySecretBoard = []
         # Storing grid object in squares 
-        for x in range(left, right//2, squareSize):
-            for y in range(top, bot, squareSize):
+        for y in range(top, bot, squareSize):
+            for x in range(left, r1, squareSize):
                 squares.append(pg.Rect(x, y, squareSize, squareSize))
-        
-        for x in range(right//2 + left, right, squareSize):
-            for y in range(top, bot, squareSize):
+
+        for y in range(top, bot, squareSize):
+            for x in range(r1+squareSize, right, squareSize):
                 enemySquares.append(pg.Rect(x,y,squareSize,squareSize))
 
         attackTypePaths = [f"{self._finalImagePath}N.png", f"{self._finalImagePath}B.png", f"{self._finalImagePath}R.png"]
@@ -483,6 +502,7 @@ class GUI(UI):
                             attackType = (attackType+1)%3
                             attackTypeImage = pg.image.load(attackTypePaths[attackType]) 
                             attackTypeRect = attackTypeImage.get_rect()
+                            break
                         for x in range(len(enemySquares)):
                             if enemySquares[x].collidepoint(point): # Checks if the mouse is inside one of the grid squares.
                                 # attack that square and swap sides
@@ -495,11 +515,12 @@ class GUI(UI):
                                 coordinput = [(coords[0] - (left+right//2))//squareSize, (coords[1] - (top))//squareSize]
 
                                 if attackType == 2:
-                                    result = self._game.radar(toAttack)
-                                    if len(result):
-                                        print(result)
+                                    result = self._game.radar(toAttack, playerNumbers[currentPlayer])
+                                    if len(result) == 0:
+                                        break
+                                    postHit = True
                                 else:
-                                    result = self._game.attack(coordinput[0], coordinput[1], toAttack, attackType)
+                                    result = self._game.attack(coordinput[0], coordinput[1], toAttack, attackType, playerNumbers[currentPlayer])
                                 if result == 2:
                                     numPlayers -= 1
                                     if numPlayers == 1:
@@ -534,18 +555,16 @@ class GUI(UI):
                                     currentPlayer = (currentPlayer + 1) % numPlayers
                                     numAttacked = 0
                                 if currentPlayer == 1 and ai != 0:
-                                    result = -2
+                                    airesult = -2
                                     print("outside while")
-                                    while result == -2:
+                                    while airesult == -2:
                                         x,y = self._game.getAIAttack()
                                         print("inside while")
-                                        result = self._game.attack(x,y,0,0)
+                                        airesult = self._game.attack(x,y,0,0)
 
-                                    if result == 2:
+                                    if airesult == 2:
                                         print("AI won!")
                                         result = [2]
-                                    else:
-                                        result = [x,y]
 
                                     currentPlayer = (currentPlayer + 1) % numPlayers
                                     numAttacked = 0
@@ -562,28 +581,32 @@ class GUI(UI):
                 else:
                     myNumber = playerNumbers[currentPlayer]
                     enemyNumber = playerNumbers[(currentPlayer+1+numAttacked) % numPlayers]
-                myBoard = self._game.getBoard(myNumber) # -2,-1,0,1
+                myBoard = self._game.getBoard(myNumber)
                 for x in range(len(squares)):
-                    if myBoard[x%10][x//10] == 1:
+                    row = x // WidthInSquares
+                    col = x % WidthInSquares
+                    if myBoard[row][col] == 1:
                         pg.draw.rect(screen, (0,255,0), squares[x]) # Green fill for a ship.
-                    elif myBoard[x%10][x//10] == 0:   # y coord is the % because of how I defined enemySquares.
+                    elif myBoard[row][col] == 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), squares[x], 1) # White grid for an unknown
-                    elif myBoard[x%10][x//10] == -1:
+                    elif myBoard[row][col] == -1:
                         pg.draw.rect(screen, (255,0,0), squares[x]) # Red fill for a hit ship
                     else:
                         pg.draw.rect(screen, (0,0,255), squares[x]) # Blue fill for known empty
                 
-                enemySecretBoard = self._game.getSBoard(enemyNumber)  #0 = empty, -1 = hit ship, -2 = hit empty
+                enemySecretBoard = self._game.getSBoard(enemyNumber) # 0 = empty, -1 = hit ship, -2 = hit empty
                 for x in range(len(enemySquares)):
-                    if enemySecretBoard[x%10][x//10] >= 0:   # y coord is the % because of how I defined enemySquares.
+                    row = x // WidthInSquares
+                    col = x % WidthInSquares
+                    if enemySecretBoard[row][col] >= 0:   # y coord is the % because of how I defined enemySquares.
                         pg.draw.rect(screen, (255,255,255), enemySquares[x], 1) # White grid for an unknown
-                    elif enemySecretBoard[x%10][x//10] == -1:
+                    elif enemySecretBoard[row][col] == -1:
                         pg.draw.rect(screen, (255,0,0), enemySquares[x]) # Red fill for a hit ship
                     else:
                         pg.draw.rect(screen, (0,0,255), enemySquares[x]) # Blue fill for known empty
 
-                screen.blit(attackTypeImage, attackTypeRect) # Drawin the current attack type, N, B, or R
-                screen.blit(numberImages[myNumber+1], (0,6*self._scale)) # Drawing the current player
+                screen.blit(attackTypeImage, attackTypeRect) # Drawing the current attack type, N, B, or R
+                screen.blit(numberImages[myNumber+1], (0,6*self._scale)) # Drawing the current player number
                 screen.blit(numberImages[enemyNumber+1], (screen.get_width()-3*self._scale, screen.get_height()-5*self._scale)) # Drawing the other grid's player
             else:
                 if isinstance(result, list):
@@ -613,25 +636,30 @@ class GUI(UI):
     def __addNewResolution(self, newScale):
         ogScale = 2
         scaleIncrease = newScale//ogScale
+        print(newScale, scaleIncrease, ogScale)
 
-        if os.path.isdir(f"FinalImages\\Scale{ogScale*scaleIncrease}"): # Check if the folder already exists.
-            self._scale = ogScale * scaleIncrease
-            self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
-            return
-        
-        # If the folder does not exist, we can create it.
-        fileNames = os.listdir("FinalImages\\Scale{ogScale}")
-        images = []
-        for name in fileNames:
-            images.append(Image.open(f"FinalImages\\Scale{ogScale}\\{name}"))
+        if not os.path.isdir(f"FinalImages\\Scale{ogScale*scaleIncrease}"): # Check if the folder already exists.
+            # If the folder does not exist, we can create it.
+            fileNames = os.listdir(f"FinalImages\\Scale{ogScale}")
+            images = []
+            for name in fileNames:
+                images.append(Image.open(f"FinalImages\\Scale{ogScale}\\{name}"))
 
-        for x in range(len(images)):
-            #resize
-            n_size=(images[x].size[0]*scaleIncrease,images[x].size[1]*scaleIncrease) #output size
-            res=images[x].resize(n_size,Image.Resampling.NEAREST)
+            os.mkdir(f"FinalImages\\Scale{int(ogScale*scaleIncrease)}")
+            for x in range(len(images)):
+                #resize
+                n_size=(images[x].size[0]*scaleIncrease,images[x].size[1]*scaleIncrease) #output size
+                res=images[x].resize(n_size,Image.Resampling.NEAREST)
 
-            #save image
-            res.save(f"FinalImages\\Scale{ogScale*scaleIncrease}\\{fileNames[x]}.png") # Scale is relative to 48 * 27 pixels
+                #save image
+                res.save(f"FinalImages\\Scale{ogScale*scaleIncrease}\\{fileNames[x]}") # Scale is relative to 48 * 27 pixels
+            
+        self._scale = ogScale * scaleIncrease
+        self._width = 48*self._scale
+        self._height = 27*self._scale
+        self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
+        pg.quit()
+        self.__mainMenu()
 
     def __help(self):
         # Initialise
@@ -699,9 +727,9 @@ class GUI(UI):
                             changed[int(toChange)-2] = newNum
 
                         if toChange == 2:
-                            Game.changeBoardDimensions(width, newNum)
-                        elif toChange == 3:
                             Game.changeBoardDimensions(newNum, height)
+                        elif toChange == 3:
+                            Game.changeBoardDimensions(width, newNum)
                         elif 4 <= toChange <= 9:
                             Game.changeShips(toChange - 4, newNum)
                         elif 10 <= toChange <= 13:
@@ -786,11 +814,9 @@ class GUI(UI):
         screen = pg.display.set_mode((self._width, self._height))
         runningAuthenticate = True
         # Buttons
-        rects = []
-        buttonImages = [pg.image.load(f"{self._finalImagePath}Username.png"), pg.image.load(f"{self._finalImagePath}Password.png")]
-        for index, image in enumerate(buttonImages):
-            rects.append(image.get_rect())
-            rects[index].update(int(round((350/960)*self._width)), int(round((190/540)*self._height)) + index*int(round((110/540)*self._height)), rects[-1].width, rects[-1].height) # repostion button
+        rects = [None, None]
+        rects[0] = pg.Rect(16*self._scale, 11*self._scale, 19*self._scale, 6*self._scale)
+        rects[1] = pg.Rect(17*self._scale, 19*self._scale, 17*self._scale, 6*self._scale)
         if authtype == "login":
             backGround = pg.image.load(f"{self._finalImagePath}LoginMenu.png")
         else:
@@ -828,8 +854,6 @@ class GUI(UI):
                                     else:
                                         runningAuthenticate = False
 
-            for index, image in enumerate(buttonImages):
-                screen.blit(image, (rects[index].left, rects[index].top))
             screen.blit(backGround, (0,0))
             pg.display.update()
 
@@ -1018,13 +1042,23 @@ class Terminal(UI):
     def __getAttackInput(self, playerNumber, ai): # x = player number, ai = ai difficulty
         if int(ai) != 0:
             if playerNumber == 1:
-                return self._game.getAIAttack(), 0
-        print("Your specials: [barrageCount, radarCount]")
-        print(self._game.getSpecialCount(playerNumber)[:2]) # Don't care about mines or hitstreak
-        print("0 - normal, 1 - barrage, 2 - radar")
-        attackType = int(input("What attack do you want to use?"))
+                return [self._game.getAIAttack(), 0]
+
+        attackType = "a"
+        specialCounts = self._game.getSpecialCount(playerNumber)[:2]
+        while not attackType.isnumeric() or (attackType != "0" and specialCounts[int(attackType)-1] == 0):
+            print("Your specials: [barrageCount, radarCount]")
+            print(specialCounts) # Don't care about mines or hitstreak
+            print("0 - normal, 1 - barrage, 2 - radar")
+            attackType = input("What attack do you want to use?")
+            print("")
+        
+        attackType = int(attackType)
+
         if attackType <= 1:
-            coordinates = input("Input square to attack (x,y), can't attack the same square twice.").split(",")
+            coordinates = ["a"]
+            while len(coordinates) < 2 or not coordinates[0].isnumeric() or not coordinates[1].isnumeric():
+                coordinates = input("Input square to attack (x,y), can't attack the same square twice.").split(",")
             return coordinates, attackType
         return 0, attackType
 
@@ -1091,6 +1125,8 @@ class Terminal(UI):
                 self.__save()
                 break
             for playerNum in range(len(playerNumbers)):
+                if not play:
+                    break
                 print(f"Player {playerNumbers[playerNum]+1} turn")
                 print(f"Player {playerNumbers[playerNum]+1} board:")
                 pp(self._game.getBoard(playerNumbers[playerNum]))
@@ -1109,11 +1145,11 @@ class Terminal(UI):
                         attackLocation, attackType = self.__getAttackInput(playerNumbers[playerNum], aiDifficulty)
                         result = -2
                         if attackType == 2:
-                            result = self._game.radar(toAttack)
+                            result = self._game.radar(toAttack, playerNumbers[playerNum])
                             print(f"There is a ship at x={result[0]}, y={result[1]}")
                         else:
                             try:
-                                result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), toAttack, attackType) # Index starts at 0
+                                result = self._game.attack(int(attackLocation[0]), int(attackLocation[1]), toAttack, attackType, playerNumbers[playerNum]) # Index starts at 0
                             except IndexError:
                                 print("Invalid attack format")
 
@@ -1122,10 +1158,11 @@ class Terminal(UI):
                         if numPlayers == 1:
                             print("Hit!")
                             print(f"Player {playerNumbers[playerNum]+1} wins!")
+                            play = False
+                            break
                         else:
                             print(toAttack+1, "was eliminated.")
                             playerNumbers.remove(toAttack)
-                        play = False
                     elif result == 1:
                         print("Hit!")
                     elif result == -1:
@@ -1271,6 +1308,7 @@ class Terminal(UI):
     def __options(self):
         changed = {}
         while True:
+            os.system('cls')
             ships = Game.getShips()
             width = Game.getWidth()
             height = Game.getHeight()
@@ -1301,25 +1339,34 @@ class Terminal(UI):
             print("Write the number of the thing you want to change, followed by what it should be changed to. (e.g. 11 -1)")
             print("Write 'E' to exit")
             inp = input()
+
             toChange = inp.split(" ")[0]
             if toChange == "E":
                 break
-            newNum = inp.split(" ")[1]
-            if newNum.isnumeric():
-                newNum = int(newNum)
+
+            if len(inp.split(" ")) == 2:
+                newNum = inp.split(" ")[1]
+                try:
+                    newNum = int(newNum)
+                    toChange = int(toChange)
+                except:
+                    input("Invalid type")
+                    continue
+            
+            if toChange < 15:
+                changed[toChange-1] = newNum
             else:
                 continue
-            changed[int(toChange)-1] = newNum
-
-            if toChange == "1":
+        
+            if toChange == 1:
                 Game.changeBoardDimensions(newNum, height)
-            elif toChange == "2":
+            elif toChange == 2:
                 Game.changeBoardDimensions(width, newNum)
-            elif 3 <= int(toChange) <= 8:
+            elif 3 <= toChange <= 8:
                 Game.changeShips(int(toChange) - 3, newNum)
-            elif 9 <= int(toChange) <= 13:
-                Game.changeSpecials(int(toChange)-9, newNum)
-            elif toChange == "14":
+            elif 9 <= toChange <= 13:
+                Game.changeSpecials(toChange-9, newNum)
+            elif toChange == 14:
                 if newNum > 1:
                     Game.changeNumPlayers(newNum)
                 else:
@@ -1328,8 +1375,8 @@ class Terminal(UI):
         
         with open("options.txt", "r") as f:
             data = f.readline().split(",")
-        print(data)
         for index, newValue in changed.items():
+            print(index, data)
             data[index] = str(newValue)
 
         with open("options.txt", "w") as f:

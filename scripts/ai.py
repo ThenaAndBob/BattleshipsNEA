@@ -53,7 +53,6 @@ class AI(Player):
             for y, row in enumerate(probabilityBoard):
                 for x, value in enumerate(row):
                     if value == maxValue:
-                        print("AI attacked:",x,y)
                         return [x,y]
         elif self._difficulty == 1:
             sumOfDirections = sum(sum(probabilityBoard, []))
@@ -62,16 +61,12 @@ class AI(Player):
             for y, row in enumerate(probabilityBoard):
                 for x, value in enumerate(row):
                     if count <= toAttack <= count + value:
-                        print([x,y])
                         return [x,y]
                     count += value
                     
-        print("DEBUG - AI Attacking Problem")
-
     def getAttack(self, ships, board):
         if self._hit is None:
             if self._difficulty < 3:
-                print("normal attacking")
                 probabilityBoard = [[0 for _ in range(len(board))] for _ in range(len(board[0]))]
                 for ship in ships:
                     for yC in range(len(board)):
@@ -110,7 +105,6 @@ class AI(Player):
                                     tempTaken.append([yC, xC+i])
             return self.__chooseAttackSquare(probabilityBoard)
         else:
-            print("ortogonal strat")
             x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
             y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
             try:
@@ -118,12 +112,11 @@ class AI(Player):
                     self._hit[3] += 1
                     x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
                     y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
+                    if x < 0 or y < 0:
+                        self._hitFeedback(-1, self._hit[0], self._hit[1])
             except IndexError:
                 pass    
 
-            print("AI attacked:",x,y)
-            print(self._hit)
-            print([x,y])
             return [x,y]
 
     def getShipPlacement(self, shipLength):
@@ -133,9 +126,8 @@ class AI(Player):
         return f"{random.randrange(0, width)}{random.randrange(0, height)}{random.randrange(0, 2)}{shipLength}"
 
     def hitFeedback(self,result,x,y):
-        print(result, self._hit)
         if self._hit is None and result == 1:
-            self._hit = [x,y,0,1]
+            self._hit = [x,y,0,1] # x,y,direction,distance
         elif self._hit is not None:
             if result == 1: # The orthogonal attack was a hit
                 self._hit[3] += 1
@@ -147,11 +139,11 @@ class AI(Player):
                     self._hit[2] = (self._hit[2] + 2) % 4
                     self._hit[3] = 1
                     self._sides += 1
-                else:
-                    print("direction incremented")
+                elif self._hit[2] < 3:
                     self._hit[2] += 1 # Rotate direction 90 degrees clockwise.
+                else:
+                    self._hit = None
             elif result == -2:
-                print(self._hit)
                 if self._hit[2] == 3:
                     self._hit = None
                 else:

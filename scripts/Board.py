@@ -2,13 +2,12 @@ class Board():
     def __init__(self, width, height): # ships passed in as xyrh
         self._width = width
         self._height = height
-        self._grid = [[0 for _ in range(width)] for _ in range(height)]
+        self._grid = [[0 for _ in range(self._width)] for _ in range(self._height)]
         self._shipHP = 0
-        self._sGrid = [[0 for _ in range(width)] for _ in range(height)]
+        self._sGrid = [[0 for _ in range(self._width)] for _ in range(self._height)]
         # In a grid, 0 is an emtpy, 1 is a ship, -1 is a hit ship and -2 is a hit empty.
 
     def clear(self):
-        print("DEBUG -- Clearing board")
         self._grid = [[0 for _ in range(self._width)] for _ in range(self._height)]
         self._shipHP = 0
         self._sGrid = [[0 for _ in range(self._width)] for _ in range(self._height)]
@@ -38,30 +37,32 @@ class Board():
         if self._grid[y][x] == -1:
             return -2
 
-    def addShip(self, ship): # string of 4 numbers
-        try:
-            if ship[2] == "1":
-                for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
-                    if self._grid[y][int(ship[0])] == 1:
-                        return -1
-            elif ship[2] == "0":
-                for x in range(int(ship[0]), int(ship[0])+int(ship[3])):
-                    if self._grid[int(ship[1])][x] == 1:
-                        return -1
-        except IndexError as e:
-            print(ship, e, "Board class, addShip.")
+    def addShip(self, ship): # list of 4 numbers
+        if ship[0] < 0 or ship[1] < 0:
             return -1
 
-        if ship[2] == "1":
-            for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
-                self._grid[y][int(ship[0])] = 1
-        elif ship[2] == "0":
-            for x in range(int(ship[0]), int(ship[0])+int(ship[3])):
-                self._grid[int(ship[1])][x] = 1
-        else:
-            print("Rotation of ship doesn't work")
+        try:
+            if ship[2] == 1:
+                for y in range(ship[1], ship[1]+ship[3]):
+                    if self._grid[y][ship[0]] == 1:
+                        return -1
+            elif ship[2] == 0:
+                for x in range(ship[0], ship[0]+ship[3]):
+                    if self._grid[ship[1]][x] == 1:
+                        return -1
+        except IndexError:
             return -1
-        self._shipHP += int(ship[3])
+
+        if ship[2] == 1:
+            for y in range(ship[1], ship[1]+ship[3]):
+                self._grid[y][ship[0]] = 1
+        elif ship[2] == 0:
+            for x in range(ship[0], ship[0]+ship[3]):
+                self._grid[ship[1]][x] = 1
+        else:
+            return -1
+        self._shipHP += ship[3]
+
         return 1
 
     def getSBoard(self):

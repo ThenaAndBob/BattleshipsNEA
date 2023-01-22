@@ -18,41 +18,37 @@ class Game():
         #
         #########################################################################
         self._players = Game.players
-        print(f"Number of players -- {Game.numPlayers}")
-        print(f"Grid dimensions -- {Game.width, Game.height}")
-        print(f"Speicals -- {Game.specialCounts}")        
-        print(f"Ships -- {Game.ships}")
-        print(f"ShipCounts -- {Game.shipCounts}")
-        print(f"Players -- {Game.players}")
 
     def clearBoard(self, playerNum):
         self._players[playerNum].clearBoard()
 
-    def radar(self, playerNum):
-        specialCount = self._players[(playerNum+1)%2].getSpecials()
+    def radar(self, playerNum, attacker=None):
+        if attacker is None:
+            attacker = (playerNum+1)%2
+        specialCount = self._players[attacker].getSpecials()
         if specialCount[1] == 0:
             return []
         board = self._players[playerNum].getBoard()
-        self._players[(playerNum+1)%2].decrementSpecial(1)
+        self._players[attacker].decrementSpecial(1)
         for y, row in enumerate(board):
             for x, value in enumerate(row):
                 if value == 1:
                     return [x,y]
 
-    def attack(self,x,y,playerNum, attackType): # PlayerNum ID = 0 or 1, the player being attacked
+    def attack(self,x,y,playerNum, attackType, attacker=None): # PlayerNum ID = 0 or 1, the player being attacked
+        if attacker is None:
+            attacker = (playerNum+1)%2
+        print(f"Attacking player {playerNum} with attackType {attackType} at {x}, {y}")
         if attackType == 0:
             result = self._players[playerNum].attack(x,y) # index starts at 0 
-            if isinstance(self._players[(playerNum +1)%2], AI):
-                self._players[(playerNum +1)%2].hitFeedback(result, int(x),int(y))
+            if isinstance(self._players[attacker], AI):
+                self._players[attacker].hitFeedback(result, int(x),int(y))
             return result
         elif attackType == 1:
-            print("Barrage attack")
-            specialCount = self._players[(playerNum+1)%2].getSpecials()
+            specialCount = self._players[attacker].getSpecials()
             if specialCount[attackType-1] == 0:
-                print("No barrage remaining.")
-                print("Specials - ", specialCount)
                 return -2
-            self._players[(playerNum+1)%2].decrementSpecial(attackType-1)
+            self._players[attacker].decrementSpecial(attackType-1)
             for yCoordinate in range(-1,2):
                 for xCoordinate in range(-1,2):
                     result = self._players[playerNum].attack(x + xCoordinate, y + yCoordinate)
@@ -63,6 +59,10 @@ class Game():
         return self._players[playerNum].getSpecials()
      
     def addShip(self, pNum, ship):
+        try:
+            ship = list(map(int, ship))
+        except ValueError:
+            return -1
         return self._players[pNum].addShip(ship)
 
     def getBoard(self, pNum):
@@ -72,18 +72,19 @@ class Game():
         return self._players[pNum].getSBoard()
 
     def getAIShip(self, shipIndex):
+        print("index in ai", shipIndex)
         try:
             return self._players[1].getShipPlacement(Game.ships[shipIndex])
         except Exception as e:
             print(self._players)
             print(shipIndex)
+            print(Game.ships)
             input(e)
 
     def getHP(self, pNum):
         return self._players[pNum].getHP()
 
     def getAIAttack(self):
-        print(self._players[0].getShips())
         return self._players[1].getAttack(self._players[0].getShips(), self._players[0].getSBoard())
 
     @staticmethod
@@ -104,7 +105,7 @@ class Game():
 
     @staticmethod
     def updatePlayers():
-        Game.players = [Player(Game.width, Game.height, Game.specialCounts), Player(Game.width, Game.height, Game.specialCounts)]
+        Game.players = [Player(Game.width, Game.height, Game.specialCounts) for _ in range(Game.numPlayers)]
 
     @staticmethod
     def getNumShips():
@@ -142,29 +143,23 @@ class Game():
 
     @staticmethod
     def changeAI(ai):
-        print("Ai:", ai)
         ai = int(ai)
         if ai == 0:
-            print("No AI")
             Game.players = [Player(Game.width, Game.height, Game.specialCounts) for _ in range(Game.numPlayers)]
         else:
-            print("Player vs AI 1v1")
             Game.players = [Player(Game.width, Game.height, Game.specialCounts), AI(Game.width, Game.height, ai)]   
             Game.numPlayers = 2
 
     @staticmethod
     def changeBoardDimensions(newWidth, newHeight):
-        print("New board dimensions", newWidth, newHeight)
         Game.width = newWidth
         Game.height = newHeight
         Game.players = [Player(newWidth, newHeight, Game.specialCounts), Player(newWidth, newHeight, Game.specialCounts)]
 
     @staticmethod
     def changeNumPlayers(newNumPlayers):
-        print("DEBUG -- Changing the number of players to", newNumPlayers)
         Game.numPlayers = newNumPlayers
         if newNumPlayers != 2:
-            print("AI can only play 2 player games!")
             Game.changeAI(0) # Updates Game.players
 
     @staticmethod

@@ -274,7 +274,7 @@ class Server():
         print("Get grid was successful -", result)
         return result
 
-serverIP = "172.16.2.150" #"192.168.2.49"
+serverIP = "192.168.2.49" # "172.16.2.150" 
 port = 5555
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 myServer = Server()

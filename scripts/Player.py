@@ -5,8 +5,6 @@ class Player():
         self._board = Board(width, height)
         self._ships = [] # ships stored as [[hp, [xCoord, yCoord], [xCoord, yCoord]...] ... ]
         self._specialCounts = specialCounts.copy() # a list of the number of specials the player has left, format: [barrageCount, radarCount, mineCount, hitStreak]
-        print("Creating player object")
-        print(f"Speicals - {self._specialCounts}")
 
     def clearBoard(self):
         self._board.clear()
@@ -27,15 +25,14 @@ class Player():
     def addShip(self, ship):
         result = self._board.addShip(ship)
         if result != -1:
-            self._ships.append([int(ship[3])])
-            if ship[2] == "1":
-                for y in range(int(ship[1]), int(ship[1])+int(ship[3])):
-                    self._ships[-1].append( [int(ship[0]), y] )
-            elif ship[2] == "0":
-                for x in range(int(ship[0]), int(ship[0])+int(ship[3])):
-                    self._ships[-1].append( [x, int(ship[1])] )
-        else:
-            return result
+            self._ships.append([ship[3]])
+            if ship[2] == 1:
+                for y in range(ship[1], ship[1]+ship[3]):
+                    self._ships[-1].append([ship[0], y])
+            elif ship[2] == 0:
+                for x in range(ship[0], ship[0]+ship[3]):
+                    self._ships[-1].append([x, ship[1]])
+        return result
 
     def getBoard(self):
         return self._board.getBoard()
@@ -53,5 +50,4 @@ class Player():
         return self._specialCounts
 
     def decrementSpecial(self, specialIndex):
-        print(f"DEBUG -- Decrementing special attack")
         self._specialCounts[specialIndex] -= 1
