@@ -15,6 +15,7 @@ class Server():
         print("Server started")
 
     def threading(self, connection):
+        connection.send(str.encode("Connected"))
         print("Connected")
         while True: # Continue running while client is connected
             received = connection.recv(2048).decode("utf-8") # receive 2048 bits of data, increase if getting more

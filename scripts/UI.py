@@ -1,6 +1,5 @@
 from abc import abstractclassmethod
 from Game import Game
-from pprint import pprint as pp
 import os
 import random
 import pygame as pg
@@ -12,7 +11,7 @@ import time
 class UI():
     def __init__(self):
         self._username = "" 
-        with open(f"{os.getcwd()}options.txt", "r") as f:
+        with open(f"options.txt", "r") as f:
             data = f.readline()
             data = data.split(",")
         data = list(map(int, data))
@@ -59,6 +58,25 @@ class UI():
     @abstractclassmethod
     def __save():
         raise NotImplementedError
+
+    @abstractclassmethod
+    def __mainMenu():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __playMenu():
+        raise NotImplementedError
+
+
+    @abstractclassmethod
+    def __stats():
+        raise NotImplementedError
+
+    @abstractclassmethod
+    def __options():
+        raise NotImplementedError
+
+
         
     #########################################################################
     #
@@ -151,7 +169,7 @@ class GUI(UI):
         self._scale = 20
         self._width = 48*self._scale
         self._height = 27*self._scale
-        self._finalImagePath = f"{os.getcwd()}\\FinalImages\\Scale{self._scale}\\"
+        self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
         self._fillColour = (0,168,243)
 
     def run(self):
@@ -377,6 +395,9 @@ class GUI(UI):
                     pg.quit()
                     self.__mainMenu()
                     return
+                elif needsHelp == 0:
+                    playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
+                    playerNum = int(playerNum[1]) - 1          
                 elif needsHelp == 1:
                     self._network.send(f"deletegame {gameID}")
                     playerNum, gameID = self._network.send(f"startGame {self._username} {enemyName}").split(" ")
@@ -578,8 +599,9 @@ class GUI(UI):
                         if isinstance(result, list) and len(result) == 1:
                             runningLocal = False 
                     elif event.key == pg.K_s:
-                        self.__save() 
-                        runningLocal = False
+                        if len(self._username):
+                            self.__save() 
+                            runningLocal = False
                     elif event.key == pg.K_c:
                         # Change the attacktype
                         attackType = (attackType+1)%3
@@ -787,7 +809,7 @@ class GUI(UI):
         pg.init()
         screen = pg.display.set_mode((self._width, self._height))
         runningOptions = True
-        titles = ["resolution", "length", "height", "ShipOne", "ShipTwo", "ShipThree", "ShipFour", "ShipFive", "ShipSix", "Barrage", "Radar", "Mine", "HitStreak", "numplayers", "colour"]
+        titles = ["resolution", "length", "height", "ShipOne", "ShipTwo", "ShipThree", "ShipFour", "ShipFive", "ShipSix", "Barrage", "Radar", "Mine", "HitStreak", "numplayers"]
         changed = {}
         option = pg.image.load(f"{self._finalImagePath}OptionsMenu.png")
         result = ""
@@ -811,12 +833,11 @@ class GUI(UI):
                         height = Game.getHeight()
                         width = Game.getWidth()
                         try:
-                            if toChange != 15:
+                            if toChange != 13:
                                 newNum = int(self.__getUserInput(titles[toChange-1]))
                         except Exception as e:
                             print(e, toChange)
                             break
-                        print(toChange, newNum)
 
                         if toChange == 1:
                             self.__addNewResolution(newNum)
@@ -827,6 +848,8 @@ class GUI(UI):
                             else:
                                 print("Must be 2 or more players")
                             changed[int(toChange)-1] = newNum 
+                        elif toChange == 13:
+                            pass
                         else:
                             changed[int(toChange)-2] = newNum
 
@@ -836,9 +859,9 @@ class GUI(UI):
                             Game.changeBoardDimensions(width, newNum)
                         elif 4 <= toChange <= 9:
                             Game.changeShips(toChange - 4, newNum)
-                        elif 10 <= toChange <= 13:
+                        elif 10 <= toChange <= 12:
                             Game.changeSpecials(toChange-10, newNum)
-                        elif toChange == 15:
+                        elif toChange == 13:
                             try:
                                 red = int(self.__getUserInput("Red"))
                                 blue = int(self.__getUserInput("Blue"))
@@ -861,7 +884,7 @@ class GUI(UI):
         choice = "a"
         while not choice.isnumeric():
             print("".join(loads), loads)
-            choice = self.__getUserInput("".join(loads))
+            choice = self.__getUserInput("".join(loads)) # Get the game id the user wants to load
             if choice == "":
                 return
         grids = self._network.send(f"loadGame {choice}")
@@ -1161,6 +1184,10 @@ class Terminal(UI):
             return coordinates, attackType
         return 0, attackType
 
+    def __displayBoard(self, playerNum):
+        for row in self._game.getBoard(playerNum):
+            print(row)
+
     def __local(self,aiDifficulty, game=None): # aiDifficulty is 0,1,2 or 3, 0 for no ai, and then 1,2,3 for difficulty level.
         #########################################################################
         #
@@ -1192,7 +1219,7 @@ class Terminal(UI):
         if game is None:
             for playerNum in range(numPlayers): # Placing ships.
                 print(f"Player {playerNum+1} turn")
-                pp(self._game.getBoard(playerNum))
+                self.__displayBoard(playerNum)
 
                 numShips = Game.getNumShips()
                 ships = Game.getShips()
@@ -1206,13 +1233,13 @@ class Terminal(UI):
                     shipLocation.append(ship)
                     while self._game.addShip(playerNum, shipLocation) == -1:
                         print("Invalid ship position, current state of board:")
-                        pp(self._game.getBoard(playerNum))
+                        self.__displayBoard(playerNum)
                         shipLocation = self.__getShipInput(playerNum, 0, numShips-1)
                         shipLocation.append(ship)
 
                     numShips -= 1
 
-                pp(self._game.getBoard(playerNum))
+                self.__displayBoard(playerNum)
 
                 input("Press enter to change turns and clear terminal")
                 os.system('cls')
@@ -1234,7 +1261,7 @@ class Terminal(UI):
                     break
                 print(f"Player {playerNumbers[playerNum]+1} turn")
                 print(f"Player {playerNumbers[playerNum]+1} board:")
-                pp(self._game.getBoard(playerNumbers[playerNum]))
+                self.__displayBoard(playerNumbers[playerNum])
 
                 if len(hints):
                     print(random.choice(hints[1]))
@@ -1330,7 +1357,7 @@ class Terminal(UI):
             else:
                 print("Checking if enemy player wants to get help.")
 
-        pp(self._game.getBoard(playerNum))
+        self.__displayBoard(playerNum)
         numShips = Game.getNumShips()
         ships = Game.getShips()
 
@@ -1340,7 +1367,7 @@ class Terminal(UI):
             shipLocation.append(ship)
             while self._game.addShip(playerNum, shipLocation) == -1:
                 print("Invalid ship position, current state of board:")
-                pp(self._game.getBoard(playerNum))
+                self.__displayBoard(playerNum)
                 shipLocation = self.__getShipInput(playerNum, 0, numShips-1)
                 shipLocation.append(ship)
             numShips -= 1
@@ -1363,10 +1390,11 @@ class Terminal(UI):
         play = True
         while play:
             print("Your board:")
-            pp(self._game.getBoard(playerNum))
+            self.__displayBoard(playerNum)
             print("")
             print("Enemy secret board")
-            pp(self._game.getSBoard((playerNum+1)%2))
+            for row in self._game.getSBoard((playerNum+1)%2):
+                print(row)
             result = -2
             while result == -2: # Returing -2 = already hit square or error, -1 = miss, 1 = hit ship, 2 = game won
                 attackLocation, attackType = self.__getAttackInput(playerNum, 0)

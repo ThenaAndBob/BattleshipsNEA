@@ -75,7 +75,7 @@ class AI(Player):
     def getAttack(self, ships, board):
         if self._hit is None:
             if self._difficulty < 3:
-                probabilityBoard = [[0 for _ in range(len(board))] for _ in range(len(board[0]))]
+                probabilityBoard = [[0 for _ in range(len(board[0]))] for _ in range(len(board))]
                 for ship in ships:
                     for yC in range(len(board)):
                         for xC in range(len(board[yC])):
@@ -121,7 +121,7 @@ class AI(Player):
                     x = self._hit[0] + (self._hit[3] * self._directions[self._hit[2]][0])
                     y = self._hit[1] + (self._hit[3] * self._directions[self._hit[2]][1])
                     if x < 0 or y < 0:
-                        self._hitFeedback(-1, self._hit[0], self._hit[1])
+                        self.hitFeedback(-1, self._hit[0], self._hit[1])
             except IndexError:
                 pass    
 
