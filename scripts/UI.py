@@ -12,7 +12,7 @@ import time
 class UI():
     def __init__(self):
         self._username = "" 
-        with open("options.txt", "r") as f:
+        with open(f"{os.getcwd()}options.txt", "r") as f:
             data = f.readline()
             data = data.split(",")
         data = list(map(int, data))
@@ -151,7 +151,7 @@ class GUI(UI):
         self._scale = 20
         self._width = 48*self._scale
         self._height = 27*self._scale
-        self._finalImagePath = f"FinalImages\\Scale{self._scale}\\"
+        self._finalImagePath = f"{os.getcwd()}\\FinalImages\\Scale{self._scale}\\"
         self._fillColour = (0,168,243)
 
     def run(self):
@@ -826,7 +826,7 @@ class GUI(UI):
                                 Game.changeNumPlayers(newNum)
                             else:
                                 print("Must be 2 or more players")
-                            changed[int(toChange)-1] = newNum # No hints in GUI mode D: IMPORTANT PROBLEM FIX.
+                            changed[int(toChange)-1] = newNum 
                         else:
                             changed[int(toChange)-2] = newNum
 
@@ -1226,7 +1226,7 @@ class Terminal(UI):
             choice = input("Write 's' to save, anything else to continue")
             if choice.lower() == "s":
                 if numPlayers != 2:
-                    print("Can only save two player games.") # IMPORANT FIX PROBLEM
+                    print("Can only save two player games.") 
                 self.__save()
                 break
             for playerNum in range(len(playerNumbers)):
