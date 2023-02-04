@@ -15,7 +15,6 @@ class Server():
         print("Server started")
 
     def threading(self, connection):
-        connection.send(str.encode("Connected"))
         print("Connected")
         while True: # Continue running while client is connected
             received = connection.recv(2048).decode("utf-8") # receive 2048 bits of data, increase if getting more
@@ -273,18 +272,15 @@ class Server():
         print("Get grid was successful -", result)
         return result
 
+# Server details
 serverIP = "192.168.2.49" # "172.16.2.150" 
 port = 5555
 mySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 myServer = Server()
+mySocket.bind((serverIP, port)) # make the socket (IP + port)
 
-try: 
-    mySocket.bind((serverIP, port)) # make the socket (IP + port)
-except socket.error as e:
-    print(e)
-
+# Connecting to users
 numPlayers = 2
-numConnections = 0
 mySocket.listen(numPlayers) # listen for 2 devices to connect to server.
 
 while True: # Continually listen for connecting devices
